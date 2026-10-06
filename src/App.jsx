@@ -100,7 +100,7 @@ function App() {
       step4: "STEP 4",
       generateTitle: "Generate Tender Package",
       generateText:
-        "Generate the final submission-ready PDF when all blocking issues are resolved.",
+        "Generate the final PDF with cover page, document index, ordered documents and page numbering.",
 
       packageReady: "Package Ready",
       packageBlocked: "Package Blocked",
@@ -197,7 +197,7 @@ function App() {
       step4: "ধাপ ৪",
       generateTitle: "টেন্ডার প্যাকেজ তৈরি করুন",
       generateText:
-        "সব ব্লকিং সমস্যা সমাধান হলে চূড়ান্ত PDF প্যাকেজ তৈরি করুন।",
+        "কভার, ডকুমেন্ট ইনডেক্স, সঠিক ক্রম এবং পৃষ্ঠা নম্বরসহ চূড়ান্ত PDF তৈরি করুন।",
 
       packageReady: "প্যাকেজ প্রস্তুত",
       packageBlocked: "প্যাকেজ ব্লক করা হয়েছে",
@@ -342,16 +342,13 @@ function App() {
           errors.push(
             `"${file.name}" was rejected because it is not a PDF file.`
           );
-
           continue;
         }
 
         try {
-          const arrayBuffer =
-            await file.arrayBuffer();
+          const arrayBuffer = await file.arrayBuffer();
 
-          const hash =
-            await createFileHash(arrayBuffer);
+          const hash = await createFileHash(arrayBuffer);
 
           const pdfDocument =
             await PDFDocument.load(arrayBuffer);
@@ -699,7 +696,6 @@ function App() {
       setGenerateError(
         "Tender information is not loaded."
       );
-
       return;
     }
 
@@ -707,7 +703,6 @@ function App() {
       setGenerateError(
         "Resolve all blocking issues before generating the package."
       );
-
       return;
     }
 
@@ -744,9 +739,50 @@ function App() {
           );
 
       /*
-        ==========================================
-        COVER PAGE
-        ==========================================
+      =========================================
+      DOCUMENT INDEX INFORMATION
+
+      Page 1 = Cover
+      Page 2 = Index
+      Page 3+ = Documents
+      =========================================
+      */
+
+      let currentStartPage = 3;
+
+      const documentIndex = [];
+
+      for (
+        const requirement of
+        includedRequirements
+      ) {
+        const fileId =
+          matches[
+            requirement.id
+          ];
+
+        const matchedFile =
+          getFileById(fileId);
+
+        if (!matchedFile) {
+          continue;
+        }
+
+        documentIndex.push({
+          requirement,
+          file: matchedFile,
+          startPage:
+            currentStartPage,
+        });
+
+        currentStartPage +=
+          matchedFile.pages;
+      }
+
+      /*
+      =========================================
+      COVER PAGE
+      =========================================
       */
 
       const coverWidth = 595.28;
@@ -798,7 +834,9 @@ function App() {
       );
 
       coverPage.drawText(
-        tender.tender_id,
+        String(
+          tender.tender_id
+        ),
         {
           x: 45,
           y: coverHeight - 112,
@@ -808,19 +846,24 @@ function App() {
         }
       );
 
-      const coverTitle =
-        String(tender.title);
+      let coverTenderTitle =
+        String(
+          tender.title || ""
+        );
 
-      const shortTitle =
-        coverTitle.length > 65
-          ? `${coverTitle.slice(
-              0,
-              62
-            )}...`
-          : coverTitle;
+      if (
+        coverTenderTitle.length >
+        65
+      ) {
+        coverTenderTitle =
+          coverTenderTitle.slice(
+            0,
+            62
+          ) + "...";
+      }
 
       coverPage.drawText(
-        shortTitle,
+        coverTenderTitle,
         {
           x: 45,
           y: coverHeight - 150,
@@ -849,7 +892,7 @@ function App() {
         }
       );
 
-      let y =
+      let coverY =
         coverHeight - 245;
 
       function drawCoverField(
@@ -860,7 +903,7 @@ function App() {
           label.toUpperCase(),
           {
             x: 45,
-            y,
+            y: coverY,
             size: 7.5,
             font: boldFont,
             color: rgb(
@@ -879,17 +922,17 @@ function App() {
           75
         ) {
           displayValue =
-            `${displayValue.slice(
+            displayValue.slice(
               0,
               72
-            )}...`;
+            ) + "...";
         }
 
         coverPage.drawText(
           displayValue,
           {
             x: 45,
-            y: y - 18,
+            y: coverY - 18,
             size: 11,
             font: regularFont,
             color: rgb(
@@ -900,7 +943,7 @@ function App() {
           }
         );
 
-        y -= 52;
+        coverY -= 52;
       }
 
       drawCoverField(
@@ -928,7 +971,8 @@ function App() {
         tender.submission_deadline
       );
 
-      const now = new Date();
+      const now =
+        new Date();
 
       const packageDate =
         `${now.getFullYear()}-${String(
@@ -938,20 +982,23 @@ function App() {
           "0"
         )}-${String(
           now.getDate()
-        ).padStart(2, "0")}`;
+        ).padStart(
+          2,
+          "0"
+        )}`;
 
       drawCoverField(
         "Package Made Date",
         packageDate
       );
 
-      y -= 5;
+      coverY -= 5;
 
       coverPage.drawText(
         "INCLUDED DOCUMENTS",
         {
           x: 45,
-          y,
+          y: coverY,
           size: 8,
           font: boldFont,
           color: rgb(
@@ -962,84 +1009,347 @@ function App() {
         }
       );
 
-      y -= 21;
+      coverY -= 21;
 
-      for (
-        let index = 0;
-        index <
-        includedRequirements.length;
-        index++
-      ) {
-        if (y < 45) {
-          break;
-        }
+      documentIndex.forEach(
+        (item, index) => {
+          if (coverY < 45) {
+            return;
+          }
 
-        const requirement =
-          includedRequirements[index];
+          let title =
+            item.requirement
+              .title_en ||
+            item.requirement
+              .title_bn ||
+            item.requirement.id;
 
-        let title =
-          requirement.title_en ||
-          requirement.title_bn ||
-          requirement.id;
-
-        title = String(title);
-
-        if (title.length > 58) {
           title =
-            `${title.slice(
-              0,
-              55
-            )}...`;
-        }
+            String(title);
 
-        coverPage.drawText(
-          `${index + 1}. ${title}`,
+          if (
+            title.length > 58
+          ) {
+            title =
+              title.slice(
+                0,
+                55
+              ) + "...";
+          }
+
+          coverPage.drawText(
+            `${index + 1}. ${title}`,
+            {
+              x: 55,
+              y: coverY,
+              size: 8.5,
+              font: regularFont,
+              color: rgb(
+                0.15,
+                0.19,
+                0.26
+              ),
+            }
+          );
+
+          coverY -= 16;
+        }
+      );
+
+      /*
+      =========================================
+      INDEX PAGE
+      =========================================
+      */
+
+      const indexPage =
+        outputPdf.addPage([
+          coverWidth,
+          coverHeight,
+        ]);
+
+      indexPage.drawRectangle({
+        x: 0,
+        y: coverHeight - 125,
+        width: coverWidth,
+        height: 125,
+        color: rgb(
+          0.035,
+          0.12,
+          0.25
+        ),
+      });
+
+      indexPage.drawRectangle({
+        x: 0,
+        y: coverHeight - 125,
+        width: 8,
+        height: 125,
+        color: rgb(
+          0.15,
+          0.48,
+          0.9
+        ),
+      });
+
+      indexPage.drawText(
+        "DOCUMENT INDEX",
+        {
+          x: 45,
+          y: coverHeight - 62,
+          size: 24,
+          font: boldFont,
+          color: rgb(
+            1,
+            1,
+            1
+          ),
+        }
+      );
+
+      indexPage.drawText(
+        String(
+          tender.tender_id
+        ),
+        {
+          x: 45,
+          y: coverHeight - 88,
+          size: 10,
+          font: regularFont,
+          color: rgb(
+            0.55,
+            0.72,
+            0.9
+          ),
+        }
+      );
+
+      indexPage.drawText(
+        "Included documents and starting page numbers",
+        {
+          x: 45,
+          y: coverHeight - 106,
+          size: 8,
+          font: regularFont,
+          color: rgb(
+            0.62,
+            0.73,
+            0.86
+          ),
+        }
+      );
+
+      let indexY =
+        coverHeight - 175;
+
+      /*
+      INDEX HEADER
+      */
+
+      indexPage.drawRectangle({
+        x: 40,
+        y: indexY - 8,
+        width:
+          coverWidth - 80,
+        height: 32,
+        color: rgb(
+          0.94,
+          0.96,
+          0.985
+        ),
+      });
+
+      indexPage.drawText(
+        "ORDER",
+        {
+          x: 52,
+          y: indexY + 3,
+          size: 8,
+          font: boldFont,
+          color: rgb(
+            0.35,
+            0.42,
+            0.52
+          ),
+        }
+      );
+
+      indexPage.drawText(
+        "DOCUMENT",
+        {
+          x: 110,
+          y: indexY + 3,
+          size: 8,
+          font: boldFont,
+          color: rgb(
+            0.35,
+            0.42,
+            0.52
+          ),
+        }
+      );
+
+      indexPage.drawText(
+        "START PAGE",
+        {
+          x: 465,
+          y: indexY + 3,
+          size: 8,
+          font: boldFont,
+          color: rgb(
+            0.35,
+            0.42,
+            0.52
+          ),
+        }
+      );
+
+      indexY -= 42;
+
+      /*
+      INDEX ROWS
+      */
+
+      documentIndex.forEach(
+        (item) => {
+          let documentTitle =
+            item.requirement
+              .title_en ||
+            item.requirement
+              .title_bn ||
+            item.requirement.id;
+
+          documentTitle =
+            String(
+              documentTitle
+            );
+
+          if (
+            documentTitle.length >
+            48
+          ) {
+            documentTitle =
+              documentTitle.slice(
+                0,
+                45
+              ) + "...";
+          }
+
+          indexPage.drawText(
+            String(
+              item.requirement
+                .order
+            ),
+            {
+              x: 55,
+              y: indexY,
+              size: 9,
+              font: boldFont,
+              color: rgb(
+                0.15,
+                0.38,
+                0.7
+              ),
+            }
+          );
+
+          indexPage.drawText(
+            documentTitle,
+            {
+              x: 110,
+              y: indexY,
+              size: 9,
+              font: regularFont,
+              color: rgb(
+                0.12,
+                0.17,
+                0.25
+              ),
+            }
+          );
+
+          indexPage.drawText(
+            String(
+              item.startPage
+            ),
+            {
+              x: 500,
+              y: indexY,
+              size: 9,
+              font: boldFont,
+              color: rgb(
+                0.1,
+                0.42,
+                0.25
+              ),
+            }
+          );
+
+          indexPage.drawLine({
+            start: {
+              x: 45,
+              y:
+                indexY - 12,
+            },
+
+            end: {
+              x:
+                coverWidth -
+                45,
+              y:
+                indexY - 12,
+            },
+
+            thickness: 0.4,
+
+            color: rgb(
+              0.86,
+              0.89,
+              0.93
+            ),
+          });
+
+          indexY -= 34;
+        }
+      );
+
+      if (indexY > 90) {
+        indexY -= 15;
+
+        indexPage.drawText(
+          `Total included documents: ${documentIndex.length}`,
           {
-            x: 55,
-            y,
-            size: 8.5,
+            x: 45,
+            y: indexY,
+            size: 9,
             font: regularFont,
             color: rgb(
-              0.15,
-              0.19,
-              0.26
+              0.4,
+              0.46,
+              0.55
             ),
           }
         );
-
-        y -= 16;
       }
 
       /*
-        ==========================================
-        ORIGINAL DOCUMENT PAGES
+      =========================================
+      ADD ORIGINAL DOCUMENTS
+      =========================================
 
-        A new page is created with extra space
-        at the bottom.
-
-        The original page is embedded ABOVE the
-        footer area, so document content is not
-        covered by the footer.
-        ==========================================
+      Extra bottom area is added so footer
+      never covers original PDF content.
+      =========================================
       */
 
       const footerHeight = 30;
 
       for (
-        const requirement of
-        includedRequirements
+        const item of
+        documentIndex
       ) {
-        const fileId =
-          matches[
-            requirement.id
-          ];
-
         const matchedFile =
-          getFileById(fileId);
-
-        if (!matchedFile) {
-          continue;
-        }
+          item.file;
 
         const sourceBytes =
           await matchedFile.file.arrayBuffer();
@@ -1078,14 +1388,19 @@ function App() {
           const embeddedPage =
             embeddedPages[0];
 
-          const outputPage =
+          const newPage =
             outputPdf.addPage([
               width,
               height +
                 footerHeight,
             ]);
 
-          outputPage.drawPage(
+          /*
+          Original page is shifted upward.
+          Footer has its own 30pt area.
+          */
+
+          newPage.drawPage(
             embeddedPage,
             {
               x: 0,
@@ -1095,13 +1410,14 @@ function App() {
             }
           );
 
-          outputPage.drawLine({
+          newPage.drawLine({
             start: {
               x: 20,
               y:
                 footerHeight -
                 1,
             },
+
             end: {
               x:
                 width -
@@ -1110,7 +1426,9 @@ function App() {
                 footerHeight -
                 1,
             },
+
             thickness: 0.4,
+
             color: rgb(
               0.82,
               0.84,
@@ -1121,9 +1439,9 @@ function App() {
       }
 
       /*
-        ==========================================
-        PAGE NUMBER FOOTERS
-        ==========================================
+      =========================================
+      PAGE FOOTERS
+      =========================================
       */
 
       const outputPages =
@@ -1159,9 +1477,15 @@ function App() {
                 (width -
                   textWidth) /
                 2,
+
               y: 10,
-              size: fontSize,
-              font: regularFont,
+
+              size:
+                fontSize,
+
+              font:
+                regularFont,
+
               color: rgb(
                 0.35,
                 0.39,
@@ -1173,9 +1497,9 @@ function App() {
       );
 
       /*
-        ==========================================
-        SAVE + DOWNLOAD
-        ==========================================
+      =========================================
+      SAVE AND DOWNLOAD
+      =========================================
       */
 
       const pdfBytes =
@@ -1185,7 +1509,8 @@ function App() {
         new Blob(
           [pdfBytes],
           {
-            type: "application/pdf",
+            type:
+              "application/pdf",
           }
         );
 
@@ -1209,16 +1534,20 @@ function App() {
       );
 
       link.click();
+
       link.remove();
 
-      setTimeout(() => {
-        URL.revokeObjectURL(
-          url
-        );
-      }, 1000);
+      setTimeout(
+        () => {
+          URL.revokeObjectURL(
+            url
+          );
+        },
+        1000
+      );
 
       setGenerateSuccess(
-        `${tender.tender_id}_Package.pdf generated successfully.`
+        `${tender.tender_id}_Package.pdf generated successfully with document index.`
       );
     } catch (err) {
       console.error(err);
@@ -1227,7 +1556,9 @@ function App() {
         "Could not generate the PDF package. Please check your uploaded PDF files."
       );
     } finally {
-      setIsGenerating(false);
+      setIsGenerating(
+        false
+      );
     }
   }
 
@@ -1240,13 +1571,8 @@ function App() {
           </div>
 
           <div>
-            <h1>
-              {t.appName}
-            </h1>
-
-            <p>
-              {t.subtitle}
-            </p>
+            <h1>{t.appName}</h1>
+            <p>{t.subtitle}</p>
           </div>
         </div>
 
@@ -1286,17 +1612,12 @@ function App() {
               AI DEVFEST 2026
             </span>
 
-            <h2>
-              {t.heroTitle}
-            </h2>
+            <h2>{t.heroTitle}</h2>
 
-            <p>
-              {t.heroText}
-            </p>
+            <p>{t.heroText}</p>
 
             <div className="privacy-pill">
               <span>●</span>
-
               {t.browserNotice}
             </div>
           </div>
@@ -1304,10 +1625,7 @@ function App() {
           <div className="hero-decoration">
             <div className="document-icon">
               <span>PDF</span>
-
-              <small>
-                PACKAGE
-              </small>
+              <small>PACKAGE</small>
             </div>
           </div>
         </section>
@@ -1321,9 +1639,7 @@ function App() {
                 File Error
               </strong>
 
-              <p>
-                {error}
-              </p>
+              <p>{error}</p>
             </div>
           </div>
         )}
@@ -1337,13 +1653,9 @@ function App() {
                 {t.step1}
               </span>
 
-              <h3>
-                {t.loadTitle}
-              </h3>
+              <h3>{t.loadTitle}</h3>
 
-              <p>
-                {t.loadText}
-              </p>
+              <p>{t.loadText}</p>
             </div>
 
             {tender && (
@@ -1378,7 +1690,7 @@ function App() {
 
         {tender && (
           <>
-            {/* TENDER INFORMATION */}
+            {/* TENDER INFO */}
 
             <section className="card">
               <div className="section-title-row">
@@ -1693,9 +2005,7 @@ function App() {
                 {pdfFiles.length ===
                 0 ? (
                   <div className="empty-state">
-                    <div>
-                      PDF
-                    </div>
+                    <div>PDF</div>
 
                     <p>
                       {
@@ -2131,6 +2441,42 @@ function App() {
                 </div>
               </div>
 
+              <div
+                style={{
+                  marginBottom: "18px",
+                  padding: "13px 15px",
+                  border:
+                    "1px solid #dbe7f7",
+                  borderRadius: "10px",
+                  background:
+                    "#f5f9ff",
+                  color:
+                    "#41658f",
+                  fontSize: "11px",
+                  lineHeight: "1.6",
+                }}
+              >
+                <strong
+                  style={{
+                    display:
+                      "block",
+                    color:
+                      "#205ba8",
+                    marginBottom:
+                      "3px",
+                  }}
+                >
+                  ✓ Document Index Included
+                </strong>
+
+                Page 1 will be the
+                cover, Page 2 will be
+                the document index,
+                and the tender
+                documents will start
+                from Page 3.
+              </div>
+
               {generateError && (
                 <div className="alert alert-error">
                   <span>!</span>
@@ -2152,9 +2498,7 @@ function App() {
 
               {generateSuccess && (
                 <div className="generate-success">
-                  <span>
-                    ✓
-                  </span>
+                  <span>✓</span>
 
                   <div>
                     <strong>
@@ -2193,9 +2537,7 @@ function App() {
                   </>
                 ) : (
                   <>
-                    <span>
-                      ↓
-                    </span>
+                    <span>↓</span>
 
                     {
                       t.generateButton
@@ -2219,8 +2561,7 @@ function App() {
                     ? "issue"
                     : "issues"}{" "}
                   above to enable
-                  package
-                  generation.
+                  package generation.
                 </p>
               )}
             </section>
