@@ -1,9 +1,5 @@
 import { useState } from "react";
-import {
-  PDFDocument,
-  StandardFonts,
-  rgb,
-} from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 
 function App() {
   const [language, setLanguage] = useState("en");
@@ -22,6 +18,9 @@ function App() {
   const [generateError, setGenerateError] = useState("");
   const [generateSuccess, setGenerateSuccess] = useState("");
 
+  const MAX_FILES = 30;
+  const MAX_TOTAL_SIZE = 50 * 1024 * 1024;
+
   const text = {
     en: {
       appName: "TenderPack",
@@ -33,8 +32,7 @@ function App() {
 
       step1: "STEP 1",
       loadTitle: "Load Tender Requirements",
-      loadText:
-        "Select the requirements.json file provided with the tender.",
+      loadText: "Select the requirements.json file provided with the tender.",
       choose: "Choose requirements.json",
 
       tenderInfo: "Tender Information",
@@ -63,7 +61,7 @@ function App() {
         "Upload all PDF documents that may be included in the final tender package.",
 
       pdfChoose: "Choose PDF Documents",
-      pdfHint: "You can select multiple PDF files",
+      pdfHint: "Multiple PDFs allowed • Maximum 30 PDFs • Maximum 50 MB total",
 
       uploadedFiles: "Uploaded Documents",
       noFiles: "No PDF documents uploaded yet.",
@@ -77,6 +75,7 @@ function App() {
       totalFiles: "Files",
       totalPages: "Pages",
       totalSize: "Total Size",
+      duplicates: "Duplicates",
 
       step3: "STEP 3",
       matchTitle: "Match & Validate Documents",
@@ -100,13 +99,13 @@ function App() {
       step4: "STEP 4",
       generateTitle: "Export & Generate Package",
       generateText:
-        "Export the validation checklist or generate the final PDF with cover, document index, ordered documents and page numbering.",
+        "Export the checklist or generate the final PDF with cover, index, ordered documents and page numbering.",
 
       packageReady: "Package Ready",
       packageBlocked: "Package Blocked",
 
       packageReadyText:
-        "All mandatory requirements are valid. You can generate the final package.",
+        "All blocking requirements are resolved. The final package can now be generated.",
 
       packageBlockedText:
         "Resolve all blocking issues before generating the PDF package.",
@@ -115,11 +114,23 @@ function App() {
       generating: "Generating Package...",
 
       exportCSV: "Export Checklist CSV",
-
       includedDocuments: "Included Documents",
 
       browserNotice:
-        "Your files stay in this browser. Nothing is uploaded to a server.",
+        "Your documents are processed locally in this browser. Nothing is uploaded to a server.",
+
+      fileError: "File Error",
+      pdfErrorTitle: "PDF Error",
+      generationError: "Generation Error",
+      packageGenerated: "Package Generated",
+      output: "Output",
+      documents: "documents",
+      files: "files",
+      page: "page",
+      pages: "pages",
+      alreadyUsed: "Already used",
+      duplicateAlreadyUsed: "Duplicate already used",
+      submissionDeadlineLabel: "Submission deadline",
     },
 
     bn: {
@@ -132,8 +143,7 @@ function App() {
 
       step1: "ধাপ ১",
       loadTitle: "টেন্ডার রিকোয়ারমেন্ট লোড করুন",
-      loadText:
-        "টেন্ডারের সাথে দেওয়া requirements.json ফাইলটি নির্বাচন করুন।",
+      loadText: "টেন্ডারের সাথে দেওয়া requirements.json ফাইলটি নির্বাচন করুন।",
       choose: "requirements.json নির্বাচন করুন",
 
       tenderInfo: "টেন্ডারের তথ্য",
@@ -162,10 +172,10 @@ function App() {
         "চূড়ান্ত টেন্ডার প্যাকেজে প্রয়োজন হতে পারে এমন সব PDF ডকুমেন্ট আপলোড করুন।",
 
       pdfChoose: "PDF ডকুমেন্ট নির্বাচন করুন",
-      pdfHint: "একসাথে একাধিক PDF নির্বাচন করা যাবে",
+      pdfHint: "একাধিক PDF • সর্বোচ্চ ৩০টি PDF • মোট সর্বোচ্চ ৫০ MB",
 
       uploadedFiles: "আপলোড করা ডকুমেন্ট",
-      noFiles: "এখনো কোনো PDF আপলোড করা হয়নি।",
+      noFiles: "এখনো কোনো PDF ডকুমেন্ট আপলোড করা হয়নি।",
 
       processing: "PDF ডকুমেন্ট পড়া হচ্ছে...",
 
@@ -176,6 +186,7 @@ function App() {
       totalFiles: "ফাইল",
       totalPages: "পৃষ্ঠা",
       totalSize: "মোট সাইজ",
+      duplicates: "ডুপ্লিকেট",
 
       step3: "ধাপ ৩",
       matchTitle: "ডকুমেন্ট মিল ও যাচাই করুন",
@@ -199,13 +210,13 @@ function App() {
       step4: "ধাপ ৪",
       generateTitle: "এক্সপোর্ট ও প্যাকেজ তৈরি",
       generateText:
-        "ভ্যালিডেশন চেকলিস্ট CSV হিসেবে এক্সপোর্ট করুন অথবা কভার, ইনডেক্স ও পৃষ্ঠা নম্বরসহ চূড়ান্ত PDF তৈরি করুন।",
+        "চেকলিস্ট এক্সপোর্ট করুন অথবা কভার, ইনডেক্স, সঠিক ডকুমেন্ট ক্রম ও পৃষ্ঠা নম্বরসহ PDF তৈরি করুন।",
 
       packageReady: "প্যাকেজ প্রস্তুত",
       packageBlocked: "প্যাকেজ ব্লক করা হয়েছে",
 
       packageReadyText:
-        "সব আবশ্যক রিকোয়ারমেন্ট সঠিক আছে। এখন চূড়ান্ত প্যাকেজ তৈরি করা যাবে।",
+        "সব ব্লকিং সমস্যা সমাধান হয়েছে। এখন চূড়ান্ত প্যাকেজ তৈরি করা যাবে।",
 
       packageBlockedText:
         "PDF প্যাকেজ তৈরির আগে সব ব্লকিং সমস্যা সমাধান করুন।",
@@ -214,11 +225,23 @@ function App() {
       generating: "প্যাকেজ তৈরি হচ্ছে...",
 
       exportCSV: "চেকলিস্ট CSV ডাউনলোড",
-
       includedDocuments: "অন্তর্ভুক্ত ডকুমেন্ট",
 
       browserNotice:
-        "আপনার ফাইল এই ব্রাউজারেই থাকবে। কোনো সার্ভারে আপলোড হবে না।",
+        "আপনার ডকুমেন্ট এই ব্রাউজারেই প্রসেস হবে। কোনো সার্ভারে আপলোড হবে না।",
+
+      fileError: "ফাইল সমস্যা",
+      pdfErrorTitle: "PDF সমস্যা",
+      generationError: "প্যাকেজ তৈরির সমস্যা",
+      packageGenerated: "প্যাকেজ তৈরি হয়েছে",
+      output: "আউটপুট",
+      documents: "ডকুমেন্ট",
+      files: "ফাইল",
+      page: "পৃষ্ঠা",
+      pages: "পৃষ্ঠা",
+      alreadyUsed: "ইতোমধ্যে ব্যবহার হয়েছে",
+      duplicateAlreadyUsed: "একই ডকুমেন্ট ইতোমধ্যে ব্যবহার হয়েছে",
+      submissionDeadlineLabel: "জমাদানের শেষ তারিখ",
     },
   };
 
@@ -230,12 +253,13 @@ function App() {
     if (!file) return;
 
     setError("");
+    setPdfError("");
     setGenerateError("");
     setGenerateSuccess("");
 
     try {
       if (!file.name.toLowerCase().endsWith(".json")) {
-        throw new Error("Please select a valid JSON file.");
+        throw new Error("Please select a valid requirements.json file.");
       }
 
       const content = await file.text();
@@ -271,7 +295,6 @@ function App() {
       setPdfFiles([]);
       setMatches({});
       setExpiryDates({});
-      setPdfError("");
     } catch (err) {
       console.error(err);
 
@@ -293,25 +316,14 @@ function App() {
 
   function getDocumentTitle(requirement) {
     if (language === "bn") {
-      return (
-        requirement.title_bn ||
-        requirement.title_en ||
-        requirement.id
-      );
+      return requirement.title_bn || requirement.title_en || requirement.id;
     }
 
-    return (
-      requirement.title_en ||
-      requirement.title_bn ||
-      requirement.id
-    );
+    return requirement.title_en || requirement.title_bn || requirement.id;
   }
 
   async function createFileHash(arrayBuffer) {
-    const hashBuffer = await crypto.subtle.digest(
-      "SHA-256",
-      arrayBuffer
-    );
+    const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
 
     return Array.from(new Uint8Array(hashBuffer))
       .map((byte) => byte.toString(16).padStart(2, "0"))
@@ -319,20 +331,24 @@ function App() {
   }
 
   async function handlePDFUpload(event) {
-    const selectedFiles = Array.from(
-      event.target.files || []
-    );
+    const selectedFiles = Array.from(event.target.files || []);
 
-    if (selectedFiles.length === 0) {
-      return;
-    }
+    if (selectedFiles.length === 0) return;
 
     setPdfError("");
     setGenerateSuccess("");
+    setGenerateError("");
     setIsReadingPDF(true);
 
     const newFiles = [];
     const errors = [];
+
+    let currentFileCount = pdfFiles.length;
+
+    let currentTotalSize = pdfFiles.reduce(
+      (total, file) => total + file.size,
+      0
+    );
 
     try {
       for (const file of selectedFiles) {
@@ -342,7 +358,21 @@ function App() {
 
         if (!isPDF) {
           errors.push(
-            `"${file.name}" was rejected because it is not a PDF file.`
+            `"${file.name}" rejected: only PDF files are allowed.`
+          );
+          continue;
+        }
+
+        if (currentFileCount >= MAX_FILES) {
+          errors.push(
+            `"${file.name}" rejected: maximum 30 PDF files are allowed.`
+          );
+          continue;
+        }
+
+        if (currentTotalSize + file.size > MAX_TOTAL_SIZE) {
+          errors.push(
+            `"${file.name}" rejected: total uploaded PDF size cannot exceed 50 MB.`
           );
           continue;
         }
@@ -352,11 +382,9 @@ function App() {
 
           const hash = await createFileHash(arrayBuffer);
 
-          const pdfDocument =
-            await PDFDocument.load(arrayBuffer);
+          const pdfDocument = await PDFDocument.load(arrayBuffer);
 
-          const pageCount =
-            pdfDocument.getPageCount();
+          const pageCount = pdfDocument.getPageCount();
 
           newFiles.push({
             id: crypto.randomUUID(),
@@ -366,6 +394,9 @@ function App() {
             hash,
             file,
           });
+
+          currentFileCount++;
+          currentTotalSize += file.size;
         } catch (fileError) {
           console.error(fileError);
 
@@ -375,10 +406,12 @@ function App() {
         }
       }
 
-      setPdfFiles((previousFiles) => [
-        ...previousFiles,
-        ...newFiles,
-      ]);
+      if (newFiles.length > 0) {
+        setPdfFiles((previousFiles) => [
+          ...previousFiles,
+          ...newFiles,
+        ]);
+      }
 
       if (errors.length > 0) {
         setPdfError(errors.join(" "));
@@ -397,23 +430,17 @@ function App() {
 
   function removePDF(id) {
     setPdfFiles((previousFiles) =>
-      previousFiles.filter(
-        (file) => file.id !== id
-      )
+      previousFiles.filter((file) => file.id !== id)
     );
 
     setMatches((previousMatches) => {
-      const updated = {
-        ...previousMatches,
-      };
+      const updated = { ...previousMatches };
 
-      Object.keys(updated).forEach(
-        (requirementId) => {
-          if (updated[requirementId] === id) {
-            delete updated[requirementId];
-          }
+      Object.keys(updated).forEach((requirementId) => {
+        if (updated[requirementId] === id) {
+          delete updated[requirementId];
         }
-      );
+      });
 
       return updated;
     });
@@ -423,10 +450,7 @@ function App() {
 
   function isDuplicateFile(currentFile) {
     return (
-      pdfFiles.filter(
-        (file) =>
-          file.hash === currentFile.hash
-      ).length > 1
+      pdfFiles.filter((file) => file.hash === currentFile.hash).length > 1
     );
   }
 
@@ -439,158 +463,94 @@ function App() {
       return `${(bytes / 1024).toFixed(1)} KB`;
     }
 
-    return `${(
-      bytes /
-      (1024 * 1024)
-    ).toFixed(2)} MB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   }
 
   function getFileById(id) {
-    return pdfFiles.find(
-      (file) => file.id === id
+    return pdfFiles.find((file) => file.id === id);
+  }
+
+  function fileUsedByAnotherRequirement(fileId, requirementId) {
+    if (!fileId) return false;
+
+    return Object.entries(matches).some(
+      ([otherRequirementId, otherFileId]) =>
+        otherRequirementId !== requirementId && otherFileId === fileId
     );
   }
 
-  function fileUsedByAnotherRequirement(
-    fileId,
-    requirementId
-  ) {
-    if (!fileId) {
-      return false;
-    }
+  function duplicateContentUsedElsewhere(fileId, requirementId) {
+    if (!fileId) return false;
+
+    const selectedFile = getFileById(fileId);
+
+    if (!selectedFile) return false;
 
     return Object.entries(matches).some(
-      ([
-        otherRequirementId,
-        otherFileId,
-      ]) =>
-        otherRequirementId !== requirementId &&
-        otherFileId === fileId
-    );
-  }
-
-  function duplicateContentUsedElsewhere(
-    fileId,
-    requirementId
-  ) {
-    if (!fileId) {
-      return false;
-    }
-
-    const selectedFile =
-      getFileById(fileId);
-
-    if (!selectedFile) {
-      return false;
-    }
-
-    return Object.entries(matches).some(
-      ([
-        otherRequirementId,
-        otherFileId,
-      ]) => {
-        if (
-          otherRequirementId === requirementId
-        ) {
+      ([otherRequirementId, otherFileId]) => {
+        if (otherRequirementId === requirementId) {
           return false;
         }
 
-        const otherFile =
-          getFileById(otherFileId);
+        const otherFile = getFileById(otherFileId);
 
         if (!otherFile) {
           return false;
         }
 
-        return (
-          otherFile.hash ===
-          selectedFile.hash
-        );
+        return otherFile.hash === selectedFile.hash;
       }
     );
   }
 
-  function handleMatch(
-    requirementId,
-    fileId
-  ) {
+  function handleMatch(requirementId, fileId) {
     setGenerateSuccess("");
     setGenerateError("");
 
     if (!fileId) {
-      setMatches(
-        (previousMatches) => {
-          const updated = {
-            ...previousMatches,
-          };
-
-          delete updated[
-            requirementId
-          ];
-
-          return updated;
-        }
-      );
+      setMatches((previousMatches) => {
+        const updated = { ...previousMatches };
+        delete updated[requirementId];
+        return updated;
+      });
 
       return;
     }
 
-    if (
-      fileUsedByAnotherRequirement(
-        fileId,
-        requirementId
-      )
-    ) {
+    if (fileUsedByAnotherRequirement(fileId, requirementId)) {
       setPdfError(
         "This PDF is already matched to another requirement."
       );
-
       return;
     }
 
-    if (
-      duplicateContentUsedElsewhere(
-        fileId,
-        requirementId
-      )
-    ) {
+    if (duplicateContentUsedElsewhere(fileId, requirementId)) {
       setPdfError(
         "A duplicate copy of this PDF content is already matched to another requirement."
       );
-
       return;
     }
 
     setPdfError("");
 
-    setMatches(
-      (previousMatches) => ({
-        ...previousMatches,
-        [requirementId]: fileId,
-      })
-    );
+    setMatches((previousMatches) => ({
+      ...previousMatches,
+      [requirementId]: fileId,
+    }));
   }
 
-  function handleExpiry(
-    requirementId,
-    value
-  ) {
+  function handleExpiry(requirementId, value) {
     setGenerateSuccess("");
     setGenerateError("");
 
-    setExpiryDates(
-      (previousDates) => ({
-        ...previousDates,
-        [requirementId]: value,
-      })
-    );
+    setExpiryDates((previousDates) => ({
+      ...previousDates,
+      [requirementId]: value,
+    }));
   }
 
-  function getRequirementStatus(
-    requirement
-  ) {
-    const matchedFileId =
-      matches[requirement.id];
+  function getRequirementStatus(requirement) {
+    const matchedFileId = matches[requirement.id];
 
     if (!matchedFileId) {
       if (requirement.mandatory) {
@@ -609,8 +569,7 @@ function App() {
     }
 
     if (requirement.has_expiry) {
-      const expiry =
-        expiryDates[requirement.id];
+      const expiry = expiryDates[requirement.id];
 
       if (!expiry) {
         return {
@@ -620,10 +579,7 @@ function App() {
         };
       }
 
-      if (
-        expiry <
-        tender.submission_deadline
-      ) {
+      if (expiry < tender.submission_deadline) {
         return {
           key: "expired",
           label: t.expired,
@@ -639,65 +595,39 @@ function App() {
     };
   }
 
-  const validationResults =
-    requirements.map(
-      (requirement) => ({
-        requirement,
-        status:
-          getRequirementStatus(
-            requirement
-          ),
-      })
-    );
+  const validationResults = requirements.map((requirement) => ({
+    requirement,
+    status: getRequirementStatus(requirement),
+  }));
 
-  const blockingCount =
-    validationResults.filter(
-      (result) =>
-        result.status.blocking
-    ).length;
+  const blockingCount = validationResults.filter(
+    (result) => result.status.blocking
+  ).length;
 
-  const okCount =
-    validationResults.filter(
-      (result) =>
-        result.status.key === "ok"
-    ).length;
+  const okCount = validationResults.filter(
+    (result) => result.status.key === "ok"
+  ).length;
 
-  const totalPages =
-    pdfFiles.reduce(
-      (total, file) =>
-        total + file.pages,
-      0
-    );
+  const totalPages = pdfFiles.reduce(
+    (total, file) => total + file.pages,
+    0
+  );
 
-  const totalSize =
-    pdfFiles.reduce(
-      (total, file) =>
-        total + file.size,
-      0
-    );
+  const totalSize = pdfFiles.reduce(
+    (total, file) => total + file.size,
+    0
+  );
 
-  const duplicateCount =
-    pdfFiles.filter((file) =>
-      isDuplicateFile(file)
-    ).length;
+  const duplicateCount = pdfFiles.filter((file) =>
+    isDuplicateFile(file)
+  ).length;
 
-  const includedCount =
-    requirements.filter(
-      (requirement) =>
-        matches[requirement.id]
-    ).length;
-
-  /*
-  ============================================
-  CSV CHECKLIST EXPORT
-  ============================================
-  */
+  const includedCount = requirements.filter(
+    (requirement) => matches[requirement.id]
+  ).length;
 
   function exportChecklistCSV() {
-    if (
-      !tender ||
-      requirements.length === 0
-    ) {
+    if (!tender || requirements.length === 0) {
       return;
     }
 
@@ -705,8 +635,10 @@ function App() {
       [
         "Order",
         "Requirement ID",
-        "Document",
+        "Title English",
+        "Title Bangla",
         "Required / Optional",
+        "Has Expiry",
         "Status",
         "Matched File",
         "Expiry Date",
@@ -714,133 +646,63 @@ function App() {
       ],
     ];
 
-    requirements.forEach(
-      (requirement) => {
-        const status =
-          getRequirementStatus(
-            requirement
-          );
+    requirements.forEach((requirement) => {
+      const status = getRequirementStatus(requirement);
 
-        const matchedFileId =
-          matches[
-            requirement.id
-          ];
+      const matchedFileId = matches[requirement.id];
 
-        const matchedFile =
-          matchedFileId
-            ? getFileById(
-                matchedFileId
-              )
-            : null;
+      const matchedFile = matchedFileId
+        ? getFileById(matchedFileId)
+        : null;
 
-        rows.push([
-          requirement.order,
-          requirement.id,
+      rows.push([
+        requirement.order,
+        requirement.id,
+        requirement.title_en || "",
+        requirement.title_bn || "",
+        requirement.mandatory ? "Required" : "Optional",
+        requirement.has_expiry ? "Yes" : "No",
+        status.label,
+        matchedFile ? matchedFile.name : "",
+        requirement.has_expiry
+          ? expiryDates[requirement.id] || ""
+          : "N/A",
+        tender.submission_deadline,
+      ]);
+    });
 
-          requirement.title_en ||
-            requirement.title_bn ||
-            requirement.id,
-
-          requirement.mandatory
-            ? "Required"
-            : "Optional",
-
-          status.label,
-
-          matchedFile
-            ? matchedFile.name
-            : "",
-
-          requirement.has_expiry
-            ? expiryDates[
-                requirement.id
-              ] || ""
-            : "N/A",
-
-          tender.submission_deadline,
-        ]);
-      }
-    );
-
-    const escapeCSV = (
-      value
-    ) => {
-      const stringValue =
-        String(value ?? "");
-
-      return `"${stringValue.replace(
-        /"/g,
-        '""'
-      )}"`;
+    const escapeCSV = (value) => {
+      const stringValue = String(value ?? "");
+      return `"${stringValue.replace(/"/g, '""')}"`;
     };
 
-    const csvContent =
-      rows
-        .map((row) =>
-          row
-            .map(escapeCSV)
-            .join(",")
-        )
-        .join("\n");
+    const csvContent = rows
+      .map((row) => row.map(escapeCSV).join(","))
+      .join("\n");
 
-    /*
-    UTF-8 BOM makes Bangla text
-    display correctly in Excel.
-    */
+    const blob = new Blob(["\uFEFF" + csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
 
-    const blob =
-      new Blob(
-        [
-          "\uFEFF" +
-            csvContent,
-        ],
-        {
-          type:
-            "text/csv;charset=utf-8;",
-        }
-      );
+    const url = URL.createObjectURL(blob);
 
-    const url =
-      URL.createObjectURL(
-        blob
-      );
-
-    const link =
-      document.createElement(
-        "a"
-      );
+    const link = document.createElement("a");
 
     link.href = url;
+    link.download = `${tender.tender_id}_Checklist.csv`;
 
-    link.download =
-      `${tender.tender_id}_Checklist.csv`;
-
-    document.body.appendChild(
-      link
-    );
-
+    document.body.appendChild(link);
     link.click();
-
     link.remove();
 
     setTimeout(() => {
-      URL.revokeObjectURL(
-        url
-      );
+      URL.revokeObjectURL(url);
     }, 1000);
   }
 
-  /*
-  ============================================
-  FINAL PDF GENERATION
-  ============================================
-  */
-
   async function generatePackage() {
     if (!tender) {
-      setGenerateError(
-        "Tender information is not loaded."
-      );
+      setGenerateError("Tender information is not loaded.");
       return;
     }
 
@@ -856,985 +718,489 @@ function App() {
     setGenerateSuccess("");
 
     try {
-      const outputPdf =
-        await PDFDocument.create();
+      const outputPdf = await PDFDocument.create();
 
-      const regularFont =
-        await outputPdf.embedFont(
-          StandardFonts.Helvetica
-        );
+      const regularFont = await outputPdf.embedFont(
+        StandardFonts.Helvetica
+      );
 
-      const boldFont =
-        await outputPdf.embedFont(
-          StandardFonts.HelveticaBold
-        );
+      const boldFont = await outputPdf.embedFont(
+        StandardFonts.HelveticaBold
+      );
 
-      const includedRequirements =
-        requirements
-          .filter(
-            (requirement) =>
-              matches[
-                requirement.id
-              ]
-          )
-          .sort(
-            (a, b) =>
-              Number(a.order) -
-              Number(b.order)
-          );
-
-      /*
-      =========================================
-      DOCUMENT INDEX CALCULATION
-
-      Page 1 = Cover
-      Page 2 = Index
-      Page 3+ = Documents
-      =========================================
-      */
+      const includedRequirements = requirements
+        .filter((requirement) => matches[requirement.id])
+        .sort((a, b) => Number(a.order) - Number(b.order));
 
       let currentStartPage = 3;
 
       const documentIndex = [];
 
-      for (
-        const requirement of
-        includedRequirements
-      ) {
-        const fileId =
-          matches[
-            requirement.id
-          ];
+      for (const requirement of includedRequirements) {
+        const fileId = matches[requirement.id];
+        const matchedFile = getFileById(fileId);
 
-        const matchedFile =
-          getFileById(fileId);
-
-        if (!matchedFile) {
-          continue;
-        }
+        if (!matchedFile) continue;
 
         documentIndex.push({
           requirement,
           file: matchedFile,
-          startPage:
-            currentStartPage,
+          startPage: currentStartPage,
         });
 
-        currentStartPage +=
-          matchedFile.pages;
+        currentStartPage += matchedFile.pages;
       }
+
+      const coverWidth = 595.28;
+      const coverHeight = 841.89;
 
       /*
-      =========================================
+      =============================================
       COVER PAGE
-      =========================================
+      =============================================
       */
 
-      const coverWidth =
-        595.28;
-
-      const coverHeight =
-        841.89;
-
-      const coverPage =
-        outputPdf.addPage([
-          coverWidth,
-          coverHeight,
-        ]);
+      const coverPage = outputPdf.addPage([
+        coverWidth,
+        coverHeight,
+      ]);
 
       coverPage.drawRectangle({
         x: 0,
-        y:
-          coverHeight -
-          195,
-        width:
-          coverWidth,
-        height: 195,
-
-        color: rgb(
-          0.035,
-          0.12,
-          0.25
-        ),
+        y: coverHeight - 170,
+        width: coverWidth,
+        height: 170,
+        color: rgb(0.035, 0.12, 0.25),
       });
 
       coverPage.drawRectangle({
         x: 0,
-        y:
-          coverHeight -
-          195,
+        y: coverHeight - 170,
         width: 8,
-        height: 195,
-
-        color: rgb(
-          0.15,
-          0.48,
-          0.9
-        ),
+        height: 170,
+        color: rgb(0.15, 0.48, 0.9),
       });
 
-      coverPage.drawText(
-        "TENDER DOCUMENT PACKAGE",
-        {
-          x: 45,
-          y:
-            coverHeight -
-            65,
+      coverPage.drawText("TENDER DOCUMENT PACKAGE", {
+        x: 42,
+        y: coverHeight - 54,
+        size: 10,
+        font: boldFont,
+        color: rgb(0.35, 0.68, 1),
+      });
 
-          size: 11,
-          font: boldFont,
+      coverPage.drawText(String(tender.tender_id), {
+        x: 42,
+        y: coverHeight - 94,
+        size: 25,
+        font: boldFont,
+        color: rgb(1, 1, 1),
+      });
 
-          color: rgb(
-            0.35,
-            0.68,
-            1
-          ),
-        }
-      );
+      let tenderTitle = String(tender.title || "");
 
-      coverPage.drawText(
-        String(
-          tender.tender_id
-        ),
-        {
-          x: 45,
-          y:
-            coverHeight -
-            112,
-
-          size: 27,
-          font: boldFont,
-
-          color: rgb(
-            1,
-            1,
-            1
-          ),
-        }
-      );
-
-      let coverTenderTitle =
-        String(
-          tender.title ||
-            ""
-        );
-
-      if (
-        coverTenderTitle.length >
-        65
-      ) {
-        coverTenderTitle =
-          coverTenderTitle.slice(
-            0,
-            62
-          ) + "...";
+      if (tenderTitle.length > 67) {
+        tenderTitle = tenderTitle.slice(0, 64) + "...";
       }
 
-      coverPage.drawText(
-        coverTenderTitle,
-        {
-          x: 45,
-          y:
-            coverHeight -
-            150,
-
-          size: 15,
-          font:
-            regularFont,
-
-          color: rgb(
-            0.83,
-            0.89,
-            0.96
-          ),
-        }
-      );
+      coverPage.drawText(tenderTitle, {
+        x: 42,
+        y: coverHeight - 128,
+        size: 13,
+        font: regularFont,
+        color: rgb(0.84, 0.9, 0.97),
+      });
 
       coverPage.drawText(
         "Submission-ready tender document package",
         {
-          x: 45,
-          y:
-            coverHeight -
-            175,
-
-          size: 9,
-          font:
-            regularFont,
-
-          color: rgb(
-            0.55,
-            0.68,
-            0.82
-          ),
+          x: 42,
+          y: coverHeight - 151,
+          size: 8.5,
+          font: regularFont,
+          color: rgb(0.56, 0.7, 0.84),
         }
       );
 
-      let coverY =
-        coverHeight -
-        245;
-
-      function drawCoverField(
-        label,
-        value
-      ) {
-        coverPage.drawText(
-          label.toUpperCase(),
-          {
-            x: 45,
-            y: coverY,
-
-            size: 7.5,
-            font:
-              boldFont,
-
-            color: rgb(
-              0.42,
-              0.48,
-              0.57
-            ),
-          }
-        );
-
-        let displayValue =
-          String(
-            value || "-"
-          );
-
-        if (
-          displayValue.length >
-          75
-        ) {
-          displayValue =
-            displayValue.slice(
-              0,
-              72
-            ) + "...";
-        }
-
-        coverPage.drawText(
-          displayValue,
-          {
-            x: 45,
-            y:
-              coverY -
-              18,
-
-            size: 11,
-            font:
-              regularFont,
-
-            color: rgb(
-              0.08,
-              0.13,
-              0.21
-            ),
-          }
-        );
-
-        coverY -= 52;
-      }
-
-      drawCoverField(
-        "Tender ID",
-        tender.tender_id
-      );
-
-      drawCoverField(
-        "Tender Title",
-        tender.title
-      );
-
-      drawCoverField(
-        "Procuring Entity",
-        tender.procuring_entity
-      );
-
-      drawCoverField(
-        "Bidder",
-        tender.bidder
-      );
-
-      drawCoverField(
-        "Submission Deadline",
-        tender.submission_deadline
-      );
-
-      const now =
-        new Date();
+      const now = new Date();
 
       const packageDate =
-        `${now.getFullYear()}-${String(
-          now.getMonth() +
-            1
-        ).padStart(
+        `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
           2,
           "0"
-        )}-${String(
-          now.getDate()
-        ).padStart(
-          2,
-          "0"
-        )}`;
-
-      drawCoverField(
-        "Package Made Date",
-        packageDate
-      );
-
-      coverY -= 5;
-
-      coverPage.drawText(
-        "INCLUDED DOCUMENTS",
-        {
-          x: 45,
-          y: coverY,
-
-          size: 8,
-          font:
-            boldFont,
-
-          color: rgb(
-            0.15,
-            0.39,
-            0.72
-          ),
-        }
-      );
-
-      coverY -= 21;
-
-      documentIndex.forEach(
-        (
-          item,
-          index
-        ) => {
-          if (
-            coverY < 45
-          ) {
-            return;
-          }
-
-          let title =
-            item
-              .requirement
-              .title_en ||
-            item
-              .requirement
-              .title_bn ||
-            item
-              .requirement
-              .id;
-
-          title =
-            String(title);
-
-          if (
-            title.length >
-            58
-          ) {
-            title =
-              title.slice(
-                0,
-                55
-              ) + "...";
-          }
-
-          coverPage.drawText(
-            `${index + 1}. ${title}`,
-            {
-              x: 55,
-              y: coverY,
-
-              size: 8.5,
-
-              font:
-                regularFont,
-
-              color: rgb(
-                0.15,
-                0.19,
-                0.26
-              ),
-            }
-          );
-
-          coverY -= 16;
-        }
-      );
+        )}-${String(now.getDate()).padStart(2, "0")}`;
 
       /*
-      =========================================
-      DOCUMENT INDEX PAGE
-      =========================================
+      =============================================
+      COMPACT TENDER INFORMATION
+      =============================================
       */
 
-      const indexPage =
-        outputPdf.addPage([
-          coverWidth,
-          coverHeight,
-        ]);
+      const coverFields = [
+        ["Tender ID", tender.tender_id],
+        ["Tender Title", tender.title],
+        ["Procuring Entity", tender.procuring_entity],
+        ["Bidder", tender.bidder],
+        ["Submission Deadline", tender.submission_deadline],
+        ["Package Made Date", packageDate],
+      ];
+
+      let fieldY = coverHeight - 205;
+
+      coverFields.forEach(([label, value]) => {
+        coverPage.drawText(label.toUpperCase(), {
+          x: 42,
+          y: fieldY,
+          size: 6.5,
+          font: boldFont,
+          color: rgb(0.43, 0.49, 0.58),
+        });
+
+        let displayValue = String(value || "-");
+
+        if (displayValue.length > 77) {
+          displayValue = displayValue.slice(0, 74) + "...";
+        }
+
+        coverPage.drawText(displayValue, {
+          x: 42,
+          y: fieldY - 14,
+          size: 9,
+          font: regularFont,
+          color: rgb(0.09, 0.14, 0.22),
+        });
+
+        fieldY -= 38;
+      });
+
+      /*
+      =============================================
+      INCLUDED DOCUMENTS - TWO COLUMNS
+      =============================================
+      */
+
+      const documentHeadingY = fieldY - 2;
+
+      coverPage.drawText("INCLUDED DOCUMENTS", {
+        x: 42,
+        y: documentHeadingY,
+        size: 7.5,
+        font: boldFont,
+        color: rgb(0.15, 0.39, 0.72),
+      });
+
+      const listStartY = documentHeadingY - 22;
+
+      const leftX = 42;
+      const rightX = 304;
+
+      const rowHeight = 15;
+      const maxRowsPerColumn = 15;
+
+      documentIndex.slice(0, 30).forEach((item, index) => {
+        const column = index < maxRowsPerColumn ? 0 : 1;
+
+        const row =
+          index < maxRowsPerColumn
+            ? index
+            : index - maxRowsPerColumn;
+
+        const x = column === 0 ? leftX : rightX;
+        const y = listStartY - row * rowHeight;
+
+        let title =
+          item.requirement.title_en ||
+          item.requirement.title_bn ||
+          item.requirement.id;
+
+        title = String(title);
+
+        if (title.length > 32) {
+          title = title.slice(0, 29) + "...";
+        }
+
+        coverPage.drawText(`${index + 1}. ${title}`, {
+          x,
+          y,
+          size: 7.2,
+          font: regularFont,
+          color: rgb(0.15, 0.19, 0.26),
+        });
+      });
+
+      /*
+      =============================================
+      DOCUMENT INDEX PAGE
+      =============================================
+      */
+
+      const indexPage = outputPdf.addPage([
+        coverWidth,
+        coverHeight,
+      ]);
 
       indexPage.drawRectangle({
         x: 0,
-        y:
-          coverHeight -
-          125,
-
-        width:
-          coverWidth,
-
+        y: coverHeight - 125,
+        width: coverWidth,
         height: 125,
-
-        color: rgb(
-          0.035,
-          0.12,
-          0.25
-        ),
+        color: rgb(0.035, 0.12, 0.25),
       });
 
       indexPage.drawRectangle({
         x: 0,
-        y:
-          coverHeight -
-          125,
-
+        y: coverHeight - 125,
         width: 8,
         height: 125,
-
-        color: rgb(
-          0.15,
-          0.48,
-          0.9
-        ),
+        color: rgb(0.15, 0.48, 0.9),
       });
 
-      indexPage.drawText(
-        "DOCUMENT INDEX",
-        {
-          x: 45,
-          y:
-            coverHeight -
-            62,
+      indexPage.drawText("DOCUMENT INDEX", {
+        x: 45,
+        y: coverHeight - 62,
+        size: 24,
+        font: boldFont,
+        color: rgb(1, 1, 1),
+      });
 
-          size: 24,
-
-          font:
-            boldFont,
-
-          color: rgb(
-            1,
-            1,
-            1
-          ),
-        }
-      );
-
-      indexPage.drawText(
-        String(
-          tender.tender_id
-        ),
-        {
-          x: 45,
-          y:
-            coverHeight -
-            88,
-
-          size: 10,
-
-          font:
-            regularFont,
-
-          color: rgb(
-            0.55,
-            0.72,
-            0.9
-          ),
-        }
-      );
+      indexPage.drawText(String(tender.tender_id), {
+        x: 45,
+        y: coverHeight - 88,
+        size: 10,
+        font: regularFont,
+        color: rgb(0.55, 0.72, 0.9),
+      });
 
       indexPage.drawText(
         "Included documents and starting page numbers",
         {
           x: 45,
-          y:
-            coverHeight -
-            106,
-
+          y: coverHeight - 106,
           size: 8,
-
-          font:
-            regularFont,
-
-          color: rgb(
-            0.62,
-            0.73,
-            0.86
-          ),
+          font: regularFont,
+          color: rgb(0.62, 0.73, 0.86),
         }
       );
 
-      let indexY =
-        coverHeight -
-        175;
-
-      /*
-      TABLE HEADER
-      */
+      let indexY = coverHeight - 165;
 
       indexPage.drawRectangle({
         x: 40,
-        y:
-          indexY -
-          8,
-
-        width:
-          coverWidth -
-          80,
-
-        height: 32,
-
-        color: rgb(
-          0.94,
-          0.96,
-          0.985
-        ),
+        y: indexY - 8,
+        width: coverWidth - 80,
+        height: 28,
+        color: rgb(0.94, 0.96, 0.985),
       });
 
-      indexPage.drawText(
-        "ORDER",
-        {
-          x: 52,
-          y:
-            indexY +
-            3,
+      indexPage.drawText("ORDER", {
+        x: 52,
+        y: indexY + 1,
+        size: 7.5,
+        font: boldFont,
+        color: rgb(0.35, 0.42, 0.52),
+      });
 
-          size: 8,
-          font:
-            boldFont,
+      indexPage.drawText("DOCUMENT", {
+        x: 110,
+        y: indexY + 1,
+        size: 7.5,
+        font: boldFont,
+        color: rgb(0.35, 0.42, 0.52),
+      });
 
-          color: rgb(
-            0.35,
-            0.42,
-            0.52
-          ),
+      indexPage.drawText("START PAGE", {
+        x: 465,
+        y: indexY + 1,
+        size: 7.5,
+        font: boldFont,
+        color: rgb(0.35, 0.42, 0.52),
+      });
+
+      indexY -= 30;
+
+      documentIndex.forEach((item) => {
+        let documentTitle =
+          item.requirement.title_en ||
+          item.requirement.title_bn ||
+          item.requirement.id;
+
+        documentTitle = String(documentTitle);
+
+        if (documentTitle.length > 48) {
+          documentTitle = documentTitle.slice(0, 45) + "...";
         }
-      );
-
-      indexPage.drawText(
-        "DOCUMENT",
-        {
-          x: 110,
-          y:
-            indexY +
-            3,
-
-          size: 8,
-          font:
-            boldFont,
-
-          color: rgb(
-            0.35,
-            0.42,
-            0.52
-          ),
-        }
-      );
-
-      indexPage.drawText(
-        "START PAGE",
-        {
-          x: 465,
-          y:
-            indexY +
-            3,
-
-          size: 8,
-          font:
-            boldFont,
-
-          color: rgb(
-            0.35,
-            0.42,
-            0.52
-          ),
-        }
-      );
-
-      indexY -= 42;
-
-      /*
-      INDEX ROWS
-      */
-
-      documentIndex.forEach(
-        (item) => {
-          let documentTitle =
-            item
-              .requirement
-              .title_en ||
-            item
-              .requirement
-              .title_bn ||
-            item
-              .requirement
-              .id;
-
-          documentTitle =
-            String(
-              documentTitle
-            );
-
-          if (
-            documentTitle.length >
-            48
-          ) {
-            documentTitle =
-              documentTitle.slice(
-                0,
-                45
-              ) + "...";
-          }
-
-          indexPage.drawText(
-            String(
-              item
-                .requirement
-                .order
-            ),
-            {
-              x: 55,
-              y:
-                indexY,
-
-              size: 9,
-
-              font:
-                boldFont,
-
-              color: rgb(
-                0.15,
-                0.38,
-                0.7
-              ),
-            }
-          );
-
-          indexPage.drawText(
-            documentTitle,
-            {
-              x: 110,
-              y:
-                indexY,
-
-              size: 9,
-
-              font:
-                regularFont,
-
-              color: rgb(
-                0.12,
-                0.17,
-                0.25
-              ),
-            }
-          );
-
-          indexPage.drawText(
-            String(
-              item.startPage
-            ),
-            {
-              x: 500,
-              y:
-                indexY,
-
-              size: 9,
-
-              font:
-                boldFont,
-
-              color: rgb(
-                0.1,
-                0.42,
-                0.25
-              ),
-            }
-          );
-
-          indexPage.drawLine({
-            start: {
-              x: 45,
-              y:
-                indexY -
-                12,
-            },
-
-            end: {
-              x:
-                coverWidth -
-                45,
-
-              y:
-                indexY -
-                12,
-            },
-
-            thickness:
-              0.4,
-
-            color: rgb(
-              0.86,
-              0.89,
-              0.93
-            ),
-          });
-
-          indexY -= 34;
-        }
-      );
-
-      if (
-        indexY > 90
-      ) {
-        indexY -= 15;
 
         indexPage.drawText(
-          `Total included documents: ${documentIndex.length}`,
+          String(item.requirement.order),
           {
-            x: 45,
+            x: 55,
             y: indexY,
-
-            size: 9,
-
-            font:
-              regularFont,
-
-            color: rgb(
-              0.4,
-              0.46,
-              0.55
-            ),
+            size: 7.5,
+            font: boldFont,
+            color: rgb(0.15, 0.38, 0.7),
           }
         );
-      }
+
+        indexPage.drawText(documentTitle, {
+          x: 110,
+          y: indexY,
+          size: 7.5,
+          font: regularFont,
+          color: rgb(0.12, 0.17, 0.25),
+        });
+
+        indexPage.drawText(String(item.startPage), {
+          x: 500,
+          y: indexY,
+          size: 7.5,
+          font: boldFont,
+          color: rgb(0.1, 0.42, 0.25),
+        });
+
+        indexPage.drawLine({
+          start: {
+            x: 45,
+            y: indexY - 8,
+          },
+          end: {
+            x: coverWidth - 45,
+            y: indexY - 8,
+          },
+          thickness: 0.35,
+          color: rgb(0.86, 0.89, 0.93),
+        });
+
+        indexY -= 20;
+      });
 
       /*
-      =========================================
-      ORIGINAL PDF DOCUMENTS
-      =========================================
+      =============================================
+      ORIGINAL DOCUMENTS
+      =============================================
       */
 
-      const footerHeight =
-        30;
+      const footerHeight = 30;
 
-      for (
-        const item of
-        documentIndex
-      ) {
-        const matchedFile =
-          item.file;
+      for (const item of documentIndex) {
+        const matchedFile = item.file;
 
-        const sourceBytes =
-          await matchedFile.file.arrayBuffer();
+        const sourceBytes = await matchedFile.file.arrayBuffer();
 
-        const sourcePdf =
-          await PDFDocument.load(
-            sourceBytes
-          );
+        const sourcePdf = await PDFDocument.load(sourceBytes);
 
-        const sourcePages =
-          sourcePdf.getPages();
+        const sourcePages = sourcePdf.getPages();
 
         for (
           let pageIndex = 0;
-          pageIndex <
-          sourcePages.length;
+          pageIndex < sourcePages.length;
           pageIndex++
         ) {
-          const sourcePage =
-            sourcePages[
-              pageIndex
-            ];
+          const sourcePage = sourcePages[pageIndex];
 
-          const {
+          const { width, height } = sourcePage.getSize();
+
+          const embeddedPages = await outputPdf.embedPdf(
+            sourcePdf,
+            [pageIndex]
+          );
+
+          const embeddedPage = embeddedPages[0];
+
+          /*
+          We add a 30pt footer area below the original
+          document so page numbering does not cover
+          original document content.
+          */
+
+          const newPage = outputPdf.addPage([
+            width,
+            height + footerHeight,
+          ]);
+
+          newPage.drawPage(embeddedPage, {
+            x: 0,
+            y: footerHeight,
             width,
             height,
-          } =
-            sourcePage.getSize();
-
-          const embeddedPages =
-            await outputPdf.embedPdf(
-              sourcePdf,
-              [pageIndex]
-            );
-
-          const embeddedPage =
-            embeddedPages[0];
-
-          const newPage =
-            outputPdf.addPage([
-              width,
-              height +
-                footerHeight,
-            ]);
-
-          newPage.drawPage(
-            embeddedPage,
-            {
-              x: 0,
-              y:
-                footerHeight,
-
-              width,
-              height,
-            }
-          );
+          });
 
           newPage.drawLine({
             start: {
               x: 20,
-              y:
-                footerHeight -
-                1,
+              y: footerHeight - 1,
             },
-
             end: {
-              x:
-                width -
-                20,
-
-              y:
-                footerHeight -
-                1,
+              x: width - 20,
+              y: footerHeight - 1,
             },
-
-            thickness:
-              0.4,
-
-            color: rgb(
-              0.82,
-              0.84,
-              0.87
-            ),
+            thickness: 0.4,
+            color: rgb(0.82, 0.84, 0.87),
           });
         }
       }
 
       /*
-      =========================================
-      PAGE NUMBER FOOTERS
-      =========================================
+      =============================================
+      FOOTER ON EVERY PAGE
+      =============================================
       */
 
-      const outputPages =
-        outputPdf.getPages();
+      const outputPages = outputPdf.getPages();
 
-      const totalOutputPages =
-        outputPages.length;
+      const totalOutputPages = outputPages.length;
 
-      outputPages.forEach(
-        (
-          page,
-          index
-        ) => {
-          const {
-            width,
-          } =
-            page.getSize();
+      outputPages.forEach((page, index) => {
+        const { width } = page.getSize();
 
-          const footerText =
-            `${tender.tender_id} | Page ${
-              index + 1
-            } of ${totalOutputPages}`;
+        const footerText =
+          `${tender.tender_id} | Page ${index + 1} of ${totalOutputPages}`;
 
-          const fontSize =
-            8;
+        const fontSize = 8;
 
-          const textWidth =
-            regularFont.widthOfTextAtSize(
-              footerText,
-              fontSize
-            );
+        const textWidth = regularFont.widthOfTextAtSize(
+          footerText,
+          fontSize
+        );
 
-          page.drawText(
-            footerText,
-            {
-              x:
-                (width -
-                  textWidth) /
-                2,
-
-              y: 10,
-
-              size:
-                fontSize,
-
-              font:
-                regularFont,
-
-              color: rgb(
-                0.35,
-                0.39,
-                0.45
-              ),
-            }
-          );
-        }
-      );
+        page.drawText(footerText, {
+          x: (width - textWidth) / 2,
+          y: 10,
+          size: fontSize,
+          font: regularFont,
+          color: rgb(0.35, 0.39, 0.45),
+        });
+      });
 
       /*
-      =========================================
-      DOWNLOAD FINAL PDF
-      =========================================
+      =============================================
+      DOWNLOAD
+      =============================================
       */
 
-      const pdfBytes =
-        await outputPdf.save();
+      const pdfBytes = await outputPdf.save();
 
-      const blob =
-        new Blob(
-          [pdfBytes],
-          {
-            type:
-              "application/pdf",
-          }
-        );
+      const blob = new Blob([pdfBytes], {
+        type: "application/pdf",
+      });
 
-      const url =
-        URL.createObjectURL(
-          blob
-        );
+      const url = URL.createObjectURL(blob);
 
-      const link =
-        document.createElement(
-          "a"
-        );
+      const link = document.createElement("a");
 
       link.href = url;
+      link.download = `${tender.tender_id}_Package.pdf`;
 
-      link.download =
-        `${tender.tender_id}_Package.pdf`;
-
-      document.body.appendChild(
-        link
-      );
+      document.body.appendChild(link);
 
       link.click();
-
       link.remove();
 
-      setTimeout(
-        () => {
-          URL.revokeObjectURL(
-            url
-          );
-        },
-        1000
-      );
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+      }, 1000);
 
       setGenerateSuccess(
-        `${tender.tender_id}_Package.pdf generated successfully with document index.`
+        `${tender.tender_id}_Package.pdf generated successfully.`
       );
     } catch (err) {
       console.error(err);
@@ -1843,9 +1209,7 @@ function App() {
         "Could not generate the PDF package. Please check your uploaded PDF files."
       );
     } finally {
-      setIsGenerating(
-        false
-      );
+      setIsGenerating(false);
     }
   }
 
@@ -1853,48 +1217,25 @@ function App() {
     <div className="app">
       <header className="navbar">
         <div className="brand">
-          <div className="brand-icon">
-            TP
-          </div>
+          <div className="brand-icon">TP</div>
 
           <div>
-            <h1>
-              {t.appName}
-            </h1>
-
-            <p>
-              {t.subtitle}
-            </p>
+            <h1>{t.appName}</h1>
+            <p>{t.subtitle}</p>
           </div>
         </div>
 
         <div className="language-switch">
           <button
-            className={
-              language === "en"
-                ? "active"
-                : ""
-            }
-            onClick={() =>
-              setLanguage(
-                "en"
-              )
-            }
+            className={language === "en" ? "active" : ""}
+            onClick={() => setLanguage("en")}
           >
             EN
           </button>
 
           <button
-            className={
-              language === "bn"
-                ? "active"
-                : ""
-            }
-            onClick={() =>
-              setLanguage(
-                "bn"
-              )
-            }
+            className={language === "bn" ? "active" : ""}
+            onClick={() => setLanguage("bn")}
           >
             বাংলা
           </button>
@@ -1905,56 +1246,34 @@ function App() {
         <section className="hero">
           <div>
             <span className="hero-badge">
-              AI DEVFEST
-              2026
+              AI DEVFEST 2026
             </span>
 
-            <h2>
-              {t.heroTitle}
-            </h2>
+            <h2>{t.heroTitle}</h2>
 
-            <p>
-              {t.heroText}
-            </p>
+            <p>{t.heroText}</p>
 
             <div className="privacy-pill">
-              <span>
-                ●
-              </span>
-
-              {
-                t.browserNotice
-              }
+              <span>●</span>
+              {t.browserNotice}
             </div>
           </div>
 
           <div className="hero-decoration">
             <div className="document-icon">
-              <span>
-                PDF
-              </span>
-
-              <small>
-                PACKAGE
-              </small>
+              <span>PDF</span>
+              <small>PACKAGE</small>
             </div>
           </div>
         </section>
 
         {error && (
           <div className="alert alert-error">
-            <span>
-              !
-            </span>
+            <span>!</span>
 
             <div>
-              <strong>
-                File Error
-              </strong>
-
-              <p>
-                {error}
-              </p>
+              <strong>{t.fileError}</strong>
+              <p>{error}</p>
             </div>
           </div>
         )}
@@ -1968,43 +1287,30 @@ function App() {
                 {t.step1}
               </span>
 
-              <h3>
-                {t.loadTitle}
-              </h3>
-
-              <p>
-                {t.loadText}
-              </p>
+              <h3>{t.loadTitle}</h3>
+              <p>{t.loadText}</p>
             </div>
 
             {tender && (
               <span className="success-badge">
-                ✓{" "}
-                {t.loaded}
+                ✓ {t.loaded}
               </span>
             )}
           </div>
 
           <label className="upload-area">
-            <div className="upload-icon">
-              ↑
-            </div>
+            <div className="upload-icon">↑</div>
 
-            <strong>
-              {t.choose}
-            </strong>
+            <strong>{t.choose}</strong>
 
             <span>
-              JSON •
-              requirements.json
+              JSON • requirements.json
             </span>
 
             <input
               type="file"
               accept=".json,application/json"
-              onChange={
-                handleJSONUpload
-              }
+              onChange={handleJSONUpload}
             />
           </label>
         </section>
@@ -2020,64 +1326,38 @@ function App() {
                     TENDER
                   </span>
 
-                  <h3>
-                    {
-                      t.tenderInfo
-                    }
-                  </h3>
+                  <h3>{t.tenderInfo}</h3>
                 </div>
 
                 <div className="tender-number">
-                  {
-                    tender.tender_id
-                  }
+                  {tender.tender_id}
                 </div>
               </div>
 
               <div className="info-grid">
                 <InfoBox
-                  label={
-                    t.tenderId
-                  }
-                  value={
-                    tender.tender_id
-                  }
+                  label={t.tenderId}
+                  value={tender.tender_id}
                 />
 
                 <InfoBox
-                  label={
-                    t.title
-                  }
-                  value={
-                    tender.title
-                  }
+                  label={t.title}
+                  value={tender.title}
                 />
 
                 <InfoBox
-                  label={
-                    t.entity
-                  }
-                  value={
-                    tender.procuring_entity
-                  }
+                  label={t.entity}
+                  value={tender.procuring_entity}
                 />
 
                 <InfoBox
-                  label={
-                    t.bidder
-                  }
-                  value={
-                    tender.bidder
-                  }
+                  label={t.bidder}
+                  value={tender.bidder}
                 />
 
                 <InfoBox
-                  label={
-                    t.deadline
-                  }
-                  value={
-                    tender.submission_deadline
-                  }
+                  label={t.deadline}
+                  value={tender.submission_deadline}
                   full
                 />
               </div>
@@ -2092,18 +1372,11 @@ function App() {
                     CHECKLIST
                   </span>
 
-                  <h3>
-                    {
-                      t.checklist
-                    }
-                  </h3>
+                  <h3>{t.checklist}</h3>
                 </div>
 
                 <div className="count-badge">
-                  {
-                    requirements.length
-                  }{" "}
-                  documents
+                  {requirements.length} {t.documents}
                 </div>
               </div>
 
@@ -2111,96 +1384,63 @@ function App() {
                 <table>
                   <thead>
                     <tr>
-                      <th>
-                        {
-                          t.order
-                        }
-                      </th>
-
-                      <th>
-                        {
-                          t.document
-                        }
-                      </th>
-
-                      <th>
-                        {
-                          t.type
-                        }
-                      </th>
-
-                      <th>
-                        {
-                          t.expiry
-                        }
-                      </th>
+                      <th>{t.order}</th>
+                      <th>{t.document}</th>
+                      <th>{t.type}</th>
+                      <th>{t.expiry}</th>
                     </tr>
                   </thead>
 
                   <tbody>
-                    {requirements.map(
-                      (
-                        requirement
-                      ) => (
-                        <tr
-                          key={
-                            requirement.id
-                          }
-                        >
-                          <td>
-                            <span className="order-number">
-                              {
-                                requirement.order
-                              }
+                    {requirements.map((requirement) => (
+                      <tr key={requirement.id}>
+                        <td>
+                          <span className="order-number">
+                            {requirement.order}
+                          </span>
+                        </td>
+
+                        <td>
+                          <div className="document-name">
+                            <strong>
+                              {getDocumentTitle(requirement)}
+                            </strong>
+
+                            <span>
+                              {requirement.id}
                             </span>
-                          </td>
+                          </div>
+                        </td>
 
-                          <td>
-                            <div className="document-name">
-                              <strong>
-                                {getDocumentTitle(
-                                  requirement
-                                )}
-                              </strong>
+                        <td>
+                          <span
+                            className={`tag ${
+                              requirement.mandatory
+                                ? "required"
+                                : "optional"
+                            }`}
+                          >
+                            {requirement.mandatory
+                              ? t.required
+                              : t.optional}
+                          </span>
+                        </td>
 
-                              <span>
-                                {
-                                  requirement.id
-                                }
-                              </span>
-                            </div>
-                          </td>
-
-                          <td>
-                            <span
-                              className={`tag ${
-                                requirement.mandatory
-                                  ? "required"
-                                  : "optional"
-                              }`}
-                            >
-                              {requirement.mandatory
-                                ? t.required
-                                : t.optional}
-                            </span>
-                          </td>
-
-                          <td>
-                            <span
-                              className={`tag ${
-                                requirement.has_expiry
-                                  ? "expiry-yes"
-                                  : "expiry-no"
-                              }`}
-                            >
-                              {requirement.has_expiry
-                                ? t.yes
-                                : t.no}
-                            </span>
-                          </td>
-                        </tr>
-                      )
-                    )}
+                        <td>
+                          <span
+                            className={`tag ${
+                              requirement.has_expiry
+                                ? "expiry-yes"
+                                : "expiry-no"
+                            }`}
+                          >
+                            {requirement.has_expiry
+                              ? t.yes
+                              : t.no}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -2212,249 +1452,158 @@ function App() {
               <div className="section-heading">
                 <div>
                   <span className="step-badge">
-                    {
-                      t.step2
-                    }
+                    {t.step2}
                   </span>
 
-                  <h3>
-                    {
-                      t.pdfTitle
-                    }
-                  </h3>
-
-                  <p>
-                    {
-                      t.pdfText
-                    }
-                  </p>
+                  <h3>{t.pdfTitle}</h3>
+                  <p>{t.pdfText}</p>
                 </div>
 
-                {pdfFiles.length >
-                  0 && (
+                {pdfFiles.length > 0 && (
                   <span className="count-badge">
-                    {
-                      pdfFiles.length
-                    }{" "}
-                    PDF
+                    {pdfFiles.length} / 30 PDF
                   </span>
                 )}
               </div>
 
               {pdfError && (
                 <div className="alert alert-error">
-                  <span>
-                    !
-                  </span>
+                  <span>!</span>
 
                   <div>
                     <strong>
-                      PDF Error
+                      {t.pdfErrorTitle}
                     </strong>
 
-                    <p>
-                      {
-                        pdfError
-                      }
-                    </p>
+                    <p>{pdfError}</p>
                   </div>
                 </div>
               )}
 
               <label className="upload-area pdf-upload-area">
-                <div className="upload-icon">
-                  ↑
-                </div>
+                <div className="upload-icon">↑</div>
 
-                <strong>
-                  {
-                    t.pdfChoose
-                  }
-                </strong>
+                <strong>{t.pdfChoose}</strong>
 
-                <span>
-                  {
-                    t.pdfHint
-                  }
-                </span>
+                <span>{t.pdfHint}</span>
 
                 <input
                   type="file"
                   accept=".pdf,application/pdf"
                   multiple
-                  onChange={
-                    handlePDFUpload
-                  }
+                  onChange={handlePDFUpload}
                 />
               </label>
 
               {isReadingPDF && (
                 <div className="processing-box">
                   <div className="spinner" />
-
-                  <span>
-                    {
-                      t.processing
-                    }
-                  </span>
+                  <span>{t.processing}</span>
                 </div>
               )}
 
-              {pdfFiles.length >
-                0 && (
+              {pdfFiles.length > 0 && (
                 <div className="pdf-stats">
                   <StatBox
-                    label={
-                      t.totalFiles
-                    }
-                    value={
-                      pdfFiles.length
-                    }
+                    label={t.totalFiles}
+                    value={`${pdfFiles.length} / 30`}
+                    warning={pdfFiles.length >= 30}
                   />
 
                   <StatBox
-                    label={
-                      t.totalPages
-                    }
-                    value={
-                      totalPages
-                    }
+                    label={t.totalPages}
+                    value={totalPages}
                   />
 
                   <StatBox
-                    label={
-                      t.totalSize
-                    }
-                    value={formatFileSize(
-                      totalSize
-                    )}
-                  />
-
-                  <StatBox
-                    label="Duplicates"
-                    value={
-                      duplicateCount
-                    }
+                    label={t.totalSize}
+                    value={`${formatFileSize(totalSize)} / 50 MB`}
                     warning={
-                      duplicateCount >
-                      0
+                      totalSize >=
+                      45 * 1024 * 1024
                     }
+                  />
+
+                  <StatBox
+                    label={t.duplicates}
+                    value={duplicateCount}
+                    warning={duplicateCount > 0}
                   />
                 </div>
               )}
 
               <div className="uploaded-section">
                 <div className="uploaded-heading">
-                  <h4>
-                    {
-                      t.uploadedFiles
-                    }
-                  </h4>
+                  <h4>{t.uploadedFiles}</h4>
 
                   <span>
-                    {
-                      pdfFiles.length
-                    }{" "}
-                    files
+                    {pdfFiles.length} {t.files}
                   </span>
                 </div>
 
-                {pdfFiles.length ===
-                0 ? (
+                {pdfFiles.length === 0 ? (
                   <div className="empty-state">
-                    <div>
-                      PDF
-                    </div>
-
-                    <p>
-                      {
-                        t.noFiles
-                      }
-                    </p>
+                    <div>PDF</div>
+                    <p>{t.noFiles}</p>
                   </div>
                 ) : (
                   <div className="pdf-list">
-                    {pdfFiles.map(
-                      (
-                        pdf
-                      ) => {
-                        const duplicate =
-                          isDuplicateFile(
-                            pdf
-                          );
+                    {pdfFiles.map((pdf) => {
+                      const duplicate =
+                        isDuplicateFile(pdf);
 
-                        return (
-                          <div
-                            className={`pdf-item ${
-                              duplicate
-                                ? "pdf-duplicate"
-                                : ""
-                            }`}
-                            key={
-                              pdf.id
+                      return (
+                        <div
+                          className={`pdf-item ${
+                            duplicate
+                              ? "pdf-duplicate"
+                              : ""
+                          }`}
+                          key={pdf.id}
+                        >
+                          <div className="pdf-file-icon">
+                            PDF
+                          </div>
+
+                          <div className="pdf-details">
+                            <strong>
+                              {pdf.name}
+                            </strong>
+
+                            <span>
+                              {formatFileSize(pdf.size)}
+                              {" • "}
+                              {pdf.pages}{" "}
+                              {pdf.pages === 1
+                                ? t.page
+                                : t.pages}
+                            </span>
+                          </div>
+
+                          <div className="pdf-status">
+                            {duplicate ? (
+                              <span className="duplicate-badge">
+                                ⚠ {t.duplicate}
+                              </span>
+                            ) : (
+                              <span className="unique-badge">
+                                ✓ {t.ready}
+                              </span>
+                            )}
+                          </div>
+
+                          <button
+                            type="button"
+                            className="remove-button"
+                            onClick={() =>
+                              removePDF(pdf.id)
                             }
                           >
-                            <div className="pdf-file-icon">
-                              PDF
-                            </div>
-
-                            <div className="pdf-details">
-                              <strong>
-                                {
-                                  pdf.name
-                                }
-                              </strong>
-
-                              <span>
-                                {formatFileSize(
-                                  pdf.size
-                                )}
-                                {" • "}
-                                {
-                                  pdf.pages
-                                }{" "}
-                                {pdf.pages ===
-                                1
-                                  ? "page"
-                                  : "pages"}
-                              </span>
-                            </div>
-
-                            <div className="pdf-status">
-                              {duplicate ? (
-                                <span className="duplicate-badge">
-                                  ⚠{" "}
-                                  {
-                                    t.duplicate
-                                  }
-                                </span>
-                              ) : (
-                                <span className="unique-badge">
-                                  ✓{" "}
-                                  {
-                                    t.ready
-                                  }
-                                </span>
-                              )}
-                            </div>
-
-                            <button
-                              type="button"
-                              className="remove-button"
-                              onClick={() =>
-                                removePDF(
-                                  pdf.id
-                                )
-                              }
-                            >
-                              {
-                                t.remove
-                              }
-                            </button>
-                          </div>
-                        );
-                      }
-                    )}
+                            {t.remove}
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -2466,237 +1615,161 @@ function App() {
               <div className="section-heading">
                 <div>
                   <span className="step-badge">
-                    {
-                      t.step3
-                    }
+                    {t.step3}
                   </span>
 
-                  <h3>
-                    {
-                      t.matchTitle
-                    }
-                  </h3>
-
-                  <p>
-                    {
-                      t.matchText
-                    }
-                  </p>
+                  <h3>{t.matchTitle}</h3>
+                  <p>{t.matchText}</p>
                 </div>
               </div>
 
               <div className="validation-summary">
                 <div
                   className={`validation-box ${
-                    blockingCount >
-                    0
+                    blockingCount > 0
                       ? "danger-summary"
                       : "success-summary"
                   }`}
                 >
-                  <span>
-                    {
-                      t.blockingIssues
-                    }
-                  </span>
-
-                  <strong>
-                    {
-                      blockingCount
-                    }
-                  </strong>
+                  <span>{t.blockingIssues}</span>
+                  <strong>{blockingCount}</strong>
                 </div>
 
                 <div className="validation-box success-summary">
-                  <span>
-                    {
-                      t.readyDocuments
-                    }
-                  </span>
-
-                  <strong>
-                    {
-                      okCount
-                    }
-                  </strong>
+                  <span>{t.readyDocuments}</span>
+                  <strong>{okCount}</strong>
                 </div>
               </div>
 
               <div className="match-list">
-                {requirements.map(
-                  (
-                    requirement
-                  ) => {
-                    const status =
-                      getRequirementStatus(
-                        requirement
-                      );
+                {requirements.map((requirement) => {
+                  const status =
+                    getRequirementStatus(requirement);
 
-                    const matchedFileId =
-                      matches[
-                        requirement.id
-                      ];
+                  const matchedFileId =
+                    matches[requirement.id];
 
-                    return (
-                      <div
-                        className="match-card"
-                        key={
-                          requirement.id
-                        }
-                      >
-                        <div className="match-card-top">
-                          <div className="match-document">
-                            <span className="match-order">
-                              {
-                                requirement.order
-                              }
-                            </span>
+                  return (
+                    <div
+                      className="match-card"
+                      key={requirement.id}
+                    >
+                      <div className="match-card-top">
+                        <div className="match-document">
+                          <span className="match-order">
+                            {requirement.order}
+                          </span>
 
-                            <div>
-                              <strong>
-                                {getDocumentTitle(
-                                  requirement
-                                )}
-                              </strong>
+                          <div>
+                            <strong>
+                              {getDocumentTitle(
+                                requirement
+                              )}
+                            </strong>
+
+                            <small>
+                              {requirement.id} •{" "}
+                              {requirement.mandatory
+                                ? t.required
+                                : t.optional}
+                            </small>
+                          </div>
+                        </div>
+
+                        <StatusBadge
+                          status={status}
+                        />
+                      </div>
+
+                      <div className="match-fields">
+                        <div className="form-group">
+                          <label>
+                            {t.matchedFile}
+                          </label>
+
+                          <select
+                            value={
+                              matchedFileId || ""
+                            }
+                            onChange={(event) =>
+                              handleMatch(
+                                requirement.id,
+                                event.target.value
+                              )
+                            }
+                          >
+                            <option value="">
+                              {t.selectPDF}
+                            </option>
+
+                            {pdfFiles.map((pdf) => {
+                              const used =
+                                fileUsedByAnotherRequirement(
+                                  pdf.id,
+                                  requirement.id
+                                );
+
+                              const duplicateUsed =
+                                duplicateContentUsedElsewhere(
+                                  pdf.id,
+                                  requirement.id
+                                );
+
+                              return (
+                                <option
+                                  value={pdf.id}
+                                  key={pdf.id}
+                                  disabled={
+                                    used ||
+                                    duplicateUsed
+                                  }
+                                >
+                                  {pdf.name}
+                                  {used
+                                    ? ` — ${t.alreadyUsed}`
+                                    : duplicateUsed
+                                    ? ` — ${t.duplicateAlreadyUsed}`
+                                    : ""}
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </div>
+
+                        {requirement.has_expiry &&
+                          matchedFileId && (
+                            <div className="form-group">
+                              <label>
+                                {t.expiryDate}
+                              </label>
+
+                              <input
+                                type="date"
+                                value={
+                                  expiryDates[
+                                    requirement.id
+                                  ] || ""
+                                }
+                                onChange={(event) =>
+                                  handleExpiry(
+                                    requirement.id,
+                                    event.target.value
+                                  )
+                                }
+                              />
 
                               <small>
+                                {t.submissionDeadlineLabel}:{" "}
                                 {
-                                  requirement.id
-                                }{" "}
-                                •{" "}
-                                {requirement.mandatory
-                                  ? t.required
-                                  : t.optional}
+                                  tender.submission_deadline
+                                }
                               </small>
                             </div>
-                          </div>
-
-                          <StatusBadge
-                            status={
-                              status
-                            }
-                          />
-                        </div>
-
-                        <div className="match-fields">
-                          <div className="form-group">
-                            <label>
-                              {
-                                t.matchedFile
-                              }
-                            </label>
-
-                            <select
-                              value={
-                                matchedFileId ||
-                                ""
-                              }
-                              onChange={(
-                                event
-                              ) =>
-                                handleMatch(
-                                  requirement.id,
-                                  event
-                                    .target
-                                    .value
-                                )
-                              }
-                            >
-                              <option value="">
-                                {
-                                  t.selectPDF
-                                }
-                              </option>
-
-                              {pdfFiles.map(
-                                (
-                                  pdf
-                                ) => {
-                                  const used =
-                                    fileUsedByAnotherRequirement(
-                                      pdf.id,
-                                      requirement.id
-                                    );
-
-                                  const duplicateUsed =
-                                    duplicateContentUsedElsewhere(
-                                      pdf.id,
-                                      requirement.id
-                                    );
-
-                                  return (
-                                    <option
-                                      value={
-                                        pdf.id
-                                      }
-                                      key={
-                                        pdf.id
-                                      }
-                                      disabled={
-                                        used ||
-                                        duplicateUsed
-                                      }
-                                    >
-                                      {
-                                        pdf.name
-                                      }
-
-                                      {used
-                                        ? " — Already used"
-                                        : duplicateUsed
-                                        ? " — Duplicate already used"
-                                        : ""}
-                                    </option>
-                                  );
-                                }
-                              )}
-                            </select>
-                          </div>
-
-                          {requirement.has_expiry &&
-                            matchedFileId && (
-                              <div className="form-group">
-                                <label>
-                                  {
-                                    t.expiryDate
-                                  }
-                                </label>
-
-                                <input
-                                  type="date"
-                                  value={
-                                    expiryDates[
-                                      requirement
-                                        .id
-                                    ] ||
-                                    ""
-                                  }
-                                  onChange={(
-                                    event
-                                  ) =>
-                                    handleExpiry(
-                                      requirement.id,
-                                      event
-                                        .target
-                                        .value
-                                    )
-                                  }
-                                />
-
-                                <small>
-                                  Submission
-                                  deadline:{" "}
-                                  {
-                                    tender.submission_deadline
-                                  }
-                                </small>
-                              </div>
-                            )}
-                        </div>
+                          )}
                       </div>
-                    );
-                  }
-                )}
+                    </div>
+                  );
+                })}
               </div>
             </section>
 
@@ -2706,51 +1779,36 @@ function App() {
               <div className="section-heading">
                 <div>
                   <span className="step-badge">
-                    {
-                      t.step4
-                    }
+                    {t.step4}
                   </span>
 
-                  <h3>
-                    {
-                      t.generateTitle
-                    }
-                  </h3>
-
-                  <p>
-                    {
-                      t.generateText
-                    }
-                  </p>
+                  <h3>{t.generateTitle}</h3>
+                  <p>{t.generateText}</p>
                 </div>
               </div>
 
               <div
                 className={`package-status-box ${
-                  blockingCount ===
-                  0
+                  blockingCount === 0
                     ? "package-ready"
                     : "package-blocked"
                 }`}
               >
                 <div className="package-status-icon">
-                  {blockingCount ===
-                  0
+                  {blockingCount === 0
                     ? "✓"
                     : "!"}
                 </div>
 
                 <div>
                   <strong>
-                    {blockingCount ===
-                    0
+                    {blockingCount === 0
                       ? t.packageReady
                       : t.packageBlocked}
                   </strong>
 
                   <p>
-                    {blockingCount ===
-                    0
+                    {blockingCount === 0
                       ? t.packageReadyText
                       : t.packageBlockedText}
                   </p>
@@ -2759,247 +1817,139 @@ function App() {
 
               <div className="package-details">
                 <div>
-                  <span>
-                    Tender ID
-                  </span>
-
+                  <span>{t.tenderId}</span>
                   <strong>
-                    {
-                      tender.tender_id
-                    }
+                    {tender.tender_id}
                   </strong>
                 </div>
 
                 <div>
                   <span>
-                    {
-                      t.includedDocuments
-                    }
+                    {t.includedDocuments}
                   </span>
-
-                  <strong>
-                    {
-                      includedCount
-                    }
-                  </strong>
+                  <strong>{includedCount}</strong>
                 </div>
 
                 <div>
                   <span>
-                    {
-                      t.blockingIssues
-                    }
+                    {t.blockingIssues}
                   </span>
-
-                  <strong>
-                    {
-                      blockingCount
-                    }
-                  </strong>
+                  <strong>{blockingCount}</strong>
                 </div>
 
                 <div>
-                  <span>
-                    Output
-                  </span>
+                  <span>{t.output}</span>
 
                   <strong className="output-name">
-                    {
-                      tender.tender_id
-                    }
-                    _Package.pdf
+                    {tender.tender_id}_Package.pdf
                   </strong>
                 </div>
               </div>
 
               <div
                 style={{
-                  marginBottom:
-                    "18px",
-
-                  padding:
-                    "14px 16px",
-
-                  border:
-                    "1px solid #dbe7f7",
-
-                  borderRadius:
-                    "10px",
-
-                  background:
-                    "#f5f9ff",
-
-                  color:
-                    "#41658f",
-
-                  fontSize:
-                    "11px",
-
-                  lineHeight:
-                    "1.6",
+                  marginBottom: "18px",
+                  padding: "14px 16px",
+                  border: "1px solid #dbe7f7",
+                  borderRadius: "10px",
+                  background: "#f5f9ff",
+                  color: "#41658f",
+                  fontSize: "11px",
+                  lineHeight: "1.6",
                 }}
               >
                 <strong
                   style={{
-                    display:
-                      "block",
-
-                    color:
-                      "#205ba8",
-
-                    marginBottom:
-                      "4px",
+                    display: "block",
+                    color: "#205ba8",
+                    marginBottom: "4px",
                   }}
                 >
-                  ✓ Bonus
-                  Features
+                  ✓ Package Features
                 </strong>
 
-                Document Index
-                with starting
-                pages + CSV
-                Checklist Export
+                Cover page • Document index • Correct
+                document order • Page numbering • CSV
+                checklist • Duplicate detection • 30 PDF /
+                50 MB limits
               </div>
 
               {generateError && (
                 <div className="alert alert-error">
-                  <span>
-                    !
-                  </span>
+                  <span>!</span>
 
                   <div>
                     <strong>
-                      Generation
-                      Error
+                      {t.generationError}
                     </strong>
-
-                    <p>
-                      {
-                        generateError
-                      }
-                    </p>
+                    <p>{generateError}</p>
                   </div>
                 </div>
               )}
 
               {generateSuccess && (
                 <div className="generate-success">
-                  <span>
-                    ✓
-                  </span>
+                  <span>✓</span>
 
                   <div>
                     <strong>
-                      Package
-                      Generated
+                      {t.packageGenerated}
                     </strong>
-
-                    <p>
-                      {
-                        generateSuccess
-                      }
-                    </p>
+                    <p>{generateSuccess}</p>
                   </div>
                 </div>
               )}
 
-              {/* CSV BUTTON */}
-
               <button
                 type="button"
-                onClick={
-                  exportChecklistCSV
-                }
+                onClick={exportChecklistCSV}
                 style={{
-                  width:
-                    "100%",
-
-                  minHeight:
-                    "52px",
-
-                  marginBottom:
-                    "12px",
-
-                  border:
-                    "1px solid #2563eb",
-
-                  borderRadius:
-                    "11px",
-
-                  background:
-                    "#ffffff",
-
-                  color:
-                    "#2563eb",
-
-                  fontSize:
-                    "13px",
-
-                  fontWeight:
-                    "800",
-
-                  cursor:
-                    "pointer",
+                  width: "100%",
+                  minHeight: "52px",
+                  marginBottom: "12px",
+                  border: "1px solid #2563eb",
+                  borderRadius: "11px",
+                  background: "#ffffff",
+                  color: "#2563eb",
+                  fontSize: "13px",
+                  fontWeight: "800",
+                  cursor: "pointer",
                 }}
               >
-                ↓{" "}
-                {
-                  t.exportCSV
-                }
+                ↓ {t.exportCSV}
               </button>
-
-              {/* PDF BUTTON */}
 
               <button
                 type="button"
                 className="generate-button"
                 disabled={
-                  blockingCount >
-                    0 ||
+                  blockingCount > 0 ||
                   isGenerating
                 }
-                onClick={
-                  generatePackage
-                }
+                onClick={generatePackage}
               >
                 {isGenerating ? (
                   <>
                     <span className="button-spinner" />
-
-                    {
-                      t.generating
-                    }
+                    {t.generating}
                   </>
                 ) : (
                   <>
-                    <span>
-                      ↓
-                    </span>
-
-                    {
-                      t.generateButton
-                    }
+                    <span>↓</span>
+                    {t.generateButton}
                   </>
                 )}
               </button>
 
-              {blockingCount >
-                0 && (
+              {blockingCount > 0 && (
                 <p className="generate-help">
-                  Resolve the{" "}
-                  <strong>
-                    {
-                      blockingCount
-                    }
-                  </strong>{" "}
-                  blocking{" "}
-                  {blockingCount ===
-                  1
-                    ? "issue"
-                    : "issues"}{" "}
-                  above to enable
-                  PDF package
-                  generation.
+                  {language === "en"
+                    ? `Resolve ${blockingCount} blocking ${
+                        blockingCount === 1
+                          ? "issue"
+                          : "issues"
+                      } above to enable PDF package generation.`
+                    : `PDF প্যাকেজ তৈরি করতে উপরের ${blockingCount}টি ব্লকিং সমস্যা সমাধান করুন।`}
                 </p>
               )}
             </section>
@@ -3009,13 +1959,13 @@ function App() {
 
       <footer className="footer">
         <p>
-          TenderPack • AI
-          DevFest 2026
+          TenderPack • AI DevFest 2026
         </p>
 
         <p>
-          Browser-only tender
-          document processing
+          {language === "en"
+            ? "Browser-only tender document processing"
+            : "শুধু ব্রাউজারে টেন্ডার ডকুমেন্ট প্রসেসিং"}
         </p>
       </footer>
     </div>
@@ -3030,18 +1980,11 @@ function InfoBox({
   return (
     <div
       className={`info-box ${
-        full
-          ? "full"
-          : ""
+        full ? "full" : ""
       }`}
     >
-      <span>
-        {label}
-      </span>
-
-      <strong>
-        {value || "—"}
-      </strong>
+      <span>{label}</span>
+      <strong>{value || "—"}</strong>
     </div>
   );
 }
@@ -3054,31 +1997,21 @@ function StatBox({
   return (
     <div
       className={`stat-box ${
-        warning
-          ? "warning-stat"
-          : ""
+        warning ? "warning-stat" : ""
       }`}
     >
-      <span>
-        {label}
-      </span>
-
-      <strong>
-        {value}
-      </strong>
+      <span>{label}</span>
+      <strong>{value}</strong>
     </div>
   );
 }
 
-function StatusBadge({
-  status,
-}) {
+function StatusBadge({ status }) {
   return (
     <span
       className={`status-badge status-${status.key}`}
     >
-      {status.key ===
-      "ok"
+      {status.key === "ok"
         ? "✓"
         : status.blocking
         ? "!"
