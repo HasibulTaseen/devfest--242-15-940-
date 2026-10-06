@@ -1,131 +1,262 @@
 import { useState } from "react";
 
+
+
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
+
+
+
+
 
 
 
 function App() {
 
+
+
   const [language, setLanguage] = useState("en");
 
+
+
   const [theme, setTheme] = useState(() => {
+
     const savedTheme = localStorage.getItem("tenderpack-theme");
 
+
+
     if (savedTheme === "dark" || savedTheme === "light") {
+
       return savedTheme;
+
     }
 
+
+
     return window.matchMedia &&
+
       window.matchMedia("(prefers-color-scheme: dark)").matches
+
       ? "dark"
+
       : "light";
+
   });
 
+
+
   function toggleTheme() {
+
     setTheme((currentTheme) => {
+
       const nextTheme = currentTheme === "dark" ? "light" : "dark";
+
       localStorage.setItem("tenderpack-theme", nextTheme);
+
       return nextTheme;
+
     });
+
   }
+
+
 
   const [tender, setTender] = useState(null);
 
+
+
   const [requirements, setRequirements] = useState([]);
+
+
 
   const [error, setError] = useState("");
 
 
 
+
+
+
+
   const [pdfFiles, setPdfFiles] = useState([]);
 
+
+
   const [pdfError, setPdfError] = useState("");
+
+
 
   const [isReadingPDF, setIsReadingPDF] = useState(false);
 
 
 
+
+
+
+
   const [matches, setMatches] = useState({});
+
+
 
   const [expiryDates, setExpiryDates] = useState({});
 
 
 
+
+
+
+
   const [isGenerating, setIsGenerating] = useState(false);
 
+
+
   const [generateError, setGenerateError] = useState("");
+
+
 
   const [generateSuccess, setGenerateSuccess] = useState("");
 
 
 
+
+
+
+
   const MAX_FILES = 30;
+
+
 
   const MAX_TOTAL_SIZE = 50 * 1024 * 1024;
 
 
 
+
+
+
+
   const text = {
+
+
 
     en: {
 
+
+
       appName: "TenderPack",
+
+
 
       subtitle: "Tender Document Package Builder",
 
 
 
+
+
+
+
       heroTitle: "Build a Complete Tender Package",
 
+
+
       heroText:
+
+
 
         "Load requirements, upload documents, validate your tender and generate a submission-ready PDF package.",
 
 
 
+
+
+
+
       step1: "STEP 1",
+
+
 
       loadTitle: "Load Tender Requirements",
 
+
+
       loadText: "Select the requirements.json file provided with the tender.",
+
+
 
       choose: "Choose requirements.json",
 
 
 
+
+
+
+
       tenderInfo: "Tender Information",
+
+
 
       tenderId: "Tender ID",
 
+
+
       title: "Tender Title",
+
+
 
       entity: "Procuring Entity",
 
+
+
       bidder: "Bidder",
+
+
 
       deadline: "Submission Deadline",
 
 
 
+
+
+
+
       checklist: "Document Requirements",
+
+
 
       order: "Order",
 
+
+
       document: "Document",
 
+
+
       type: "Type",
+
+
 
       expiry: "Expiry Check",
 
 
 
+
+
+
+
       required: "Required",
+
+
 
       optional: "Optional",
 
+
+
       yes: "Required",
 
+
+
       no: "Not Required",
+
+
+
+
 
 
 
@@ -133,25 +264,51 @@ function App() {
 
 
 
+
+
+
+
       step2: "STEP 2",
+
+
 
       pdfTitle: "Upload Tender Documents",
 
+
+
       pdfText:
+
+
 
         "Upload all PDF documents that may be included in the final tender package.",
 
 
 
+
+
+
+
       pdfChoose: "Choose PDF Documents",
+
+
 
       pdfHint: "Multiple PDFs allowed • Maximum 30 PDFs • Maximum 50 MB total",
 
 
 
+
+
+
+
       uploadedFiles: "Uploaded Documents",
 
+
+
       noFiles: "No PDF documents uploaded yet.",
+
+
+
+
 
 
 
@@ -159,37 +316,75 @@ function App() {
 
 
 
+
+
+
+
       remove: "Remove",
 
+
+
       ready: "Ready",
+
+
 
       duplicate: "Duplicate",
 
 
 
+
+
+
+
       totalFiles: "Files",
+
+
 
       totalPages: "Pages",
 
+
+
       totalSize: "Total Size",
+
+
 
       duplicates: "Duplicates",
 
 
 
+
+
+
+
       step3: "STEP 3",
+
+
 
       matchTitle: "Match & Validate Documents",
 
+
+
       matchText:
+
+
 
         "Assign each uploaded PDF to the correct requirement and enter expiry dates where required.",
 
 
 
+
+
+
+
       matchedFile: "Matched PDF",
 
+
+
       expiryDate: "Expiry Date",
+
+
+
+
 
 
 
@@ -197,157 +392,315 @@ function App() {
 
 
 
+
+
+
+
       missing: "Missing",
+
+
 
       expiryNeeded: "Expiry date needed",
 
+
+
       expired: "Expired",
 
+
+
       notProvided: "Not provided",
+
+
 
       ok: "OK",
 
 
 
+
+
+
+
       blockingIssues: "Blocking Issues",
+
+
 
       readyDocuments: "Ready Documents",
 
 
 
+
+
+
+
       step4: "STEP 4",
+
+
 
       generateTitle: "Export & Generate Package",
 
+
+
       generateText:
+
+
 
         "Export the checklist or generate the final PDF with cover, index, ordered documents and page numbering.",
 
 
 
+
+
+
+
       packageReady: "Package Ready",
+
+
 
       packageBlocked: "Package Blocked",
 
 
 
+
+
+
+
       packageReadyText:
+
+
 
         "All blocking requirements are resolved. The final package can now be generated.",
 
 
 
+
+
+
+
       packageBlockedText:
+
+
 
         "Resolve all blocking issues before generating the PDF package.",
 
 
 
+
+
+
+
       generateButton: "Generate Package PDF",
+
+
 
       generating: "Generating Package...",
 
 
 
+
+
+
+
       exportCSV: "Export Checklist CSV",
+
+
 
       includedDocuments: "Included Documents",
 
 
 
+
+
+
+
       browserNotice:
+
+
 
         "Your documents are processed locally in this browser. Nothing is uploaded to a server.",
 
 
 
+
+
+
+
       fileError: "File Error",
+
+
 
       pdfErrorTitle: "PDF Error",
 
+
+
       generationError: "Generation Error",
+
+
 
       packageGenerated: "Package Generated",
 
+
+
       output: "Output",
+
+
 
       documents: "documents",
 
+
+
       files: "files",
+
+
 
       page: "page",
 
+
+
       pages: "pages",
+
+
 
       alreadyUsed: "Already used",
 
+
+
       duplicateAlreadyUsed: "Duplicate already used",
 
+
+
       submissionDeadlineLabel: "Submission deadline",
+
+
 
     },
 
 
 
+
+
+
+
     bn: {
 
+
+
       appName: "TenderPack",
+
+
 
       subtitle: "টেন্ডার ডকুমেন্ট প্যাকেজ বিল্ডার",
 
 
 
+
+
+
+
       heroTitle: "সম্পূর্ণ টেন্ডার প্যাকেজ তৈরি করুন",
 
+
+
       heroText:
+
+
 
         "রিকোয়ারমেন্ট লোড করুন, ডকুমেন্ট আপলোড করুন, টেন্ডার যাচাই করুন এবং সাবমিশনের জন্য PDF প্যাকেজ তৈরি করুন।",
 
 
 
+
+
+
+
       step1: "ধাপ ১",
+
+
 
       loadTitle: "টেন্ডার রিকোয়ারমেন্ট লোড করুন",
 
+
+
       loadText: "টেন্ডারের সাথে দেওয়া requirements.json ফাইলটি নির্বাচন করুন।",
+
+
 
       choose: "requirements.json নির্বাচন করুন",
 
 
 
+
+
+
+
       tenderInfo: "টেন্ডারের তথ্য",
+
+
 
       tenderId: "টেন্ডার আইডি",
 
+
+
       title: "টেন্ডারের নাম",
+
+
 
       entity: "প্রকিউরিং প্রতিষ্ঠান",
 
+
+
       bidder: "বিডার",
+
+
 
       deadline: "জমাদানের শেষ তারিখ",
 
 
 
+
+
+
+
       checklist: "ডকুমেন্টের প্রয়োজনীয়তা",
+
+
 
       order: "ক্রম",
 
+
+
       document: "ডকুমেন্ট",
 
+
+
       type: "ধরন",
+
+
 
       expiry: "মেয়াদ পরীক্ষা",
 
 
 
+
+
+
+
       required: "আবশ্যক",
+
+
 
       optional: "ঐচ্ছিক",
 
+
+
       yes: "প্রয়োজন",
 
+
+
       no: "প্রয়োজন নেই",
+
+
+
+
 
 
 
@@ -355,25 +708,51 @@ function App() {
 
 
 
+
+
+
+
       step2: "ধাপ ২",
+
+
 
       pdfTitle: "টেন্ডার ডকুমেন্ট আপলোড করুন",
 
+
+
       pdfText:
+
+
 
         "চূড়ান্ত টেন্ডার প্যাকেজে প্রয়োজন হতে পারে এমন সব PDF ডকুমেন্ট আপলোড করুন।",
 
 
 
+
+
+
+
       pdfChoose: "PDF ডকুমেন্ট নির্বাচন করুন",
+
+
 
       pdfHint: "একাধিক PDF • সর্বোচ্চ ৩০টি PDF • মোট সর্বোচ্চ ৫০ MB",
 
 
 
+
+
+
+
       uploadedFiles: "আপলোড করা ডকুমেন্ট",
 
+
+
       noFiles: "এখনো কোনো PDF ডকুমেন্ট আপলোড করা হয়নি।",
+
+
+
+
 
 
 
@@ -381,37 +760,75 @@ function App() {
 
 
 
+
+
+
+
       remove: "মুছুন",
 
+
+
       ready: "প্রস্তুত",
+
+
 
       duplicate: "ডুপ্লিকেট",
 
 
 
+
+
+
+
       totalFiles: "ফাইল",
+
+
 
       totalPages: "পৃষ্ঠা",
 
+
+
       totalSize: "মোট সাইজ",
+
+
 
       duplicates: "ডুপ্লিকেট",
 
 
 
+
+
+
+
       step3: "ধাপ ৩",
+
+
 
       matchTitle: "ডকুমেন্ট মিল ও যাচাই করুন",
 
+
+
       matchText:
+
+
 
         "প্রতিটি PDF সঠিক রিকোয়ারমেন্টের সাথে মিল করুন এবং প্রয়োজন হলে মেয়াদের তারিখ দিন।",
 
 
 
+
+
+
+
       matchedFile: "মিল করা PDF",
 
+
+
       expiryDate: "মেয়াদের তারিখ",
+
+
+
+
 
 
 
@@ -419,97 +836,195 @@ function App() {
 
 
 
+
+
+
+
       missing: "অনুপস্থিত",
+
+
 
       expiryNeeded: "মেয়াদের তারিখ প্রয়োজন",
 
+
+
       expired: "মেয়াদ শেষ",
 
+
+
       notProvided: "দেওয়া হয়নি",
+
+
 
       ok: "ঠিক আছে",
 
 
 
+
+
+
+
       blockingIssues: "ব্লকিং সমস্যা",
+
+
 
       readyDocuments: "প্রস্তুত ডকুমেন্ট",
 
 
 
+
+
+
+
       step4: "ধাপ ৪",
+
+
 
       generateTitle: "এক্সপোর্ট ও প্যাকেজ তৈরি",
 
+
+
       generateText:
+
+
 
         "চেকলিস্ট এক্সপোর্ট করুন অথবা কভার, ইনডেক্স, সঠিক ডকুমেন্ট ক্রম ও পৃষ্ঠা নম্বরসহ PDF তৈরি করুন।",
 
 
 
+
+
+
+
       packageReady: "প্যাকেজ প্রস্তুত",
+
+
 
       packageBlocked: "প্যাকেজ ব্লক করা হয়েছে",
 
 
 
+
+
+
+
       packageReadyText:
+
+
 
         "সব ব্লকিং সমস্যা সমাধান হয়েছে। এখন চূড়ান্ত প্যাকেজ তৈরি করা যাবে।",
 
 
 
+
+
+
+
       packageBlockedText:
+
+
 
         "PDF প্যাকেজ তৈরির আগে সব ব্লকিং সমস্যা সমাধান করুন।",
 
 
 
+
+
+
+
       generateButton: "PDF প্যাকেজ তৈরি করুন",
+
+
 
       generating: "প্যাকেজ তৈরি হচ্ছে...",
 
 
 
+
+
+
+
       exportCSV: "চেকলিস্ট CSV ডাউনলোড",
+
+
 
       includedDocuments: "অন্তর্ভুক্ত ডকুমেন্ট",
 
 
 
+
+
+
+
       browserNotice:
+
+
 
         "আপনার ডকুমেন্ট এই ব্রাউজারেই প্রসেস হবে। কোনো সার্ভারে আপলোড হবে না।",
 
 
 
+
+
+
+
       fileError: "ফাইল সমস্যা",
+
+
 
       pdfErrorTitle: "PDF সমস্যা",
 
+
+
       generationError: "প্যাকেজ তৈরির সমস্যা",
+
+
 
       packageGenerated: "প্যাকেজ তৈরি হয়েছে",
 
+
+
       output: "আউটপুট",
+
+
 
       documents: "ডকুমেন্ট",
 
+
+
       files: "ফাইল",
+
+
 
       page: "পৃষ্ঠা",
 
+
+
       pages: "পৃষ্ঠা",
+
+
 
       alreadyUsed: "ইতোমধ্যে ব্যবহার হয়েছে",
 
+
+
       duplicateAlreadyUsed: "একই ডকুমেন্ট ইতোমধ্যে ব্যবহার হয়েছে",
+
+
 
       submissionDeadlineLabel: "জমাদানের শেষ তারিখ",
 
+
+
     },
 
+
+
   };
+
+
+
+
 
 
 
@@ -517,9 +1032,19 @@ function App() {
 
 
 
+
+
+
+
   async function handleJSONUpload(event) {
 
+
+
     const file = event.target.files?.[0];
+
+
+
+
 
 
 
@@ -527,165 +1052,331 @@ function App() {
 
 
 
+
+
+
+
     setError("");
+
+
 
     setPdfError("");
 
+
+
     setGenerateError("");
+
+
 
     setGenerateSuccess("");
 
 
 
+
+
+
+
     try {
+
+
 
       if (!file.name.toLowerCase().endsWith(".json")) {
 
+
+
         throw new Error("Please select a valid requirements.json file.");
 
+
+
       }
+
+
+
+
 
 
 
       const content = await file.text();
 
+
+
       const data = JSON.parse(content);
+
+
+
+
 
 
 
       if (!data.tender) {
 
+
+
         throw new Error("Tender information is missing.");
 
+
+
       }
+
+
+
+
 
 
 
       if (!Array.isArray(data.requirements)) {
 
+
+
         throw new Error("Requirements list is missing.");
 
+
+
       }
+
+
+
+
 
 
 
       if (
 
+
+
         !data.tender.tender_id ||
+
+
 
         !data.tender.title ||
 
+
+
         !data.tender.procuring_entity ||
+
+
 
         !data.tender.bidder ||
 
+
+
         !data.tender.submission_deadline
+
+
 
       ) {
 
+
+
         throw new Error(
+
+
 
           "The tender information in requirements.json is incomplete."
 
+
+
         );
+
+
 
       }
 
 
 
+
+
+
+
       const sortedRequirements = [...data.requirements].sort(
+
+
 
         (a, b) => Number(a.order) - Number(b.order)
 
+
+
       );
+
+
+
+
 
 
 
       setTender(data.tender);
 
+
+
       setRequirements(sortedRequirements);
+
+
+
+
 
 
 
       setPdfFiles([]);
 
+
+
       setMatches({});
+
+
 
       setExpiryDates({});
 
+
+
     } catch (err) {
+
+
 
       console.error(err);
 
 
 
+
+
+
+
       setTender(null);
+
+
 
       setRequirements([]);
 
+
+
       setPdfFiles([]);
 
+
+
       setMatches({});
+
+
 
       setExpiryDates({});
 
 
 
+
+
+
+
       setError(
+
+
 
         err instanceof Error
 
+
+
           ? err.message
+
+
 
           : "Could not read requirements.json."
 
+
+
       );
 
+
+
     }
+
+
+
+
 
 
 
     event.target.value = "";
 
+
+
   }
+
+
+
+
 
 
 
   function getDocumentTitle(requirement) {
 
+
+
     if (language === "bn") {
 
+
+
       return requirement.title_bn || requirement.title_en || requirement.id;
+
+
 
     }
 
 
 
+
+
+
+
     return requirement.title_en || requirement.title_bn || requirement.id;
 
+
+
   }
+
+
+
+
 
 
 
   async function createFileHash(arrayBuffer) {
 
+
+
     const hashBuffer = await crypto.subtle.digest("SHA-256", arrayBuffer);
+
+
+
+
 
 
 
     return Array.from(new Uint8Array(hashBuffer))
 
+
+
       .map((byte) => byte.toString(16).padStart(2, "0"))
 
+
+
       .join("");
+
+
 
   }
 
 
 
+
+
+
+
   async function handlePDFUpload(event) {
 
+
+
     const selectedFiles = Array.from(event.target.files || []);
+
+
+
+
 
 
 
@@ -693,19 +1384,39 @@ function App() {
 
 
 
+
+
+
+
     setPdfError("");
+
+
 
     setGenerateSuccess("");
 
+
+
     setGenerateError("");
+
+
 
     setIsReadingPDF(true);
 
 
 
+
+
+
+
     const newFiles = [];
 
+
+
     const errors = [];
+
+
+
+
 
 
 
@@ -713,73 +1424,147 @@ function App() {
 
 
 
+
+
+
+
     let currentTotalSize = pdfFiles.reduce(
+
+
 
       (total, file) => total + file.size,
 
+
+
       0
+
+
 
     );
 
 
 
+
+
+
+
     try {
+
+
 
       for (const file of selectedFiles) {
 
+
+
         const isPDF =
 
+
+
           file.type === "application/pdf" ||
+
+
 
           file.name.toLowerCase().endsWith(".pdf");
 
 
 
+
+
+
+
         if (!isPDF) {
+
+
 
           errors.push(
 
+
+
             `"${file.name}" rejected: only PDF files are allowed.`
+
+
 
           );
 
+
+
           continue;
 
+
+
         }
+
+
+
+
 
 
 
         if (currentFileCount >= MAX_FILES) {
 
+
+
           errors.push(
+
+
 
             `"${file.name}" rejected: maximum 30 PDF files are allowed.`
 
+
+
           );
+
+
 
           continue;
 
+
+
         }
+
+
+
+
 
 
 
         if (currentTotalSize + file.size > MAX_TOTAL_SIZE) {
 
+
+
           errors.push(
+
+
 
             `"${file.name}" rejected: total uploaded PDF size cannot exceed 50 MB.`
 
+
+
           );
 
+
+
           continue;
+
+
 
         }
 
 
 
+
+
+
+
         try {
 
+
+
           const arrayBuffer = await file.arrayBuffer();
+
+
+
+
 
 
 
@@ -787,7 +1572,15 @@ function App() {
 
 
 
+
+
+
+
           const pdfDocument = await PDFDocument.load(arrayBuffer);
+
+
+
+
 
 
 
@@ -795,195 +1588,391 @@ function App() {
 
 
 
+
+
+
+
           newFiles.push({
+
+
 
             id: crypto.randomUUID(),
 
+
+
             name: file.name,
+
+
 
             size: file.size,
 
+
+
             pages: pageCount,
+
+
 
             hash,
 
+
+
             file,
+
+
 
           });
 
 
 
+
+
+
+
           currentFileCount++;
+
+
 
           currentTotalSize += file.size;
 
+
+
         } catch (fileError) {
+
+
 
           console.error(fileError);
 
 
 
+
+
+
+
           errors.push(
+
+
 
             `"${file.name}" could not be read. The PDF may be damaged or password protected.`
 
+
+
           );
+
+
 
         }
 
+
+
       }
+
+
+
+
 
 
 
       if (newFiles.length > 0) {
 
+
+
         setPdfFiles((previousFiles) => [
+
+
 
           ...previousFiles,
 
+
+
           ...newFiles,
+
+
 
         ]);
 
+
+
       }
+
+
+
+
 
 
 
       if (errors.length > 0) {
 
+
+
         setPdfError(errors.join(" "));
+
+
 
       }
 
+
+
     } catch (uploadError) {
+
+
 
       console.error(uploadError);
 
 
 
+
+
+
+
       setPdfError(
+
+
 
         "Something went wrong while reading the PDF documents."
 
+
+
       );
+
+
 
     } finally {
 
+
+
       setIsReadingPDF(false);
+
+
 
       event.target.value = "";
 
+
+
     }
 
+
+
   }
+
+
+
+
 
 
 
   function removePDF(id) {
 
+
+
     setPdfFiles((previousFiles) =>
+
+
 
       previousFiles.filter((file) => file.id !== id)
 
+
+
     );
+
+
+
+
 
 
 
     setMatches((previousMatches) => {
 
+
+
       const updated = { ...previousMatches };
+
+
+
+
 
 
 
       Object.keys(updated).forEach((requirementId) => {
 
+
+
         if (updated[requirementId] === id) {
+
+
 
           delete updated[requirementId];
 
+
+
         }
+
+
 
       });
 
 
 
+
+
+
+
       return updated;
+
+
 
     });
 
 
 
+
+
+
+
     setGenerateSuccess("");
 
+
+
   }
+
+
+
+
 
 
 
   function isDuplicateFile(currentFile) {
 
+
+
     return (
+
+
 
       pdfFiles.filter((file) => file.hash === currentFile.hash).length > 1
 
+
+
     );
 
+
+
   }
+
+
+
+
 
 
 
   function formatFileSize(bytes) {
 
+
+
     if (bytes < 1024) {
+
+
 
       return `${bytes} B`;
 
+
+
     }
+
+
+
+
 
 
 
     if (bytes < 1024 * 1024) {
 
+
+
       return `${(bytes / 1024).toFixed(1)} KB`;
+
+
 
     }
 
 
 
+
+
+
+
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 
+
+
   }
+
+
+
+
 
 
 
   function getFileById(id) {
 
+
+
     return pdfFiles.find((file) => file.id === id);
 
+
+
   }
+
+
+
+
 
 
 
   function fileUsedByAnotherRequirement(fileId, requirementId) {
 
+
+
     if (!fileId) return false;
+
+
+
+
 
 
 
     return Object.entries(matches).some(
 
+
+
       ([otherRequirementId, otherFileId]) =>
+
+
 
         otherRequirementId !== requirementId && otherFileId === fileId
 
+
+
     );
+
+
 
   }
 
 
 
+
+
+
+
   function duplicateContentUsedElsewhere(fileId, requirementId) {
 
+
+
     if (!fileId) return false;
+
+
+
+
 
 
 
@@ -991,19 +1980,39 @@ function App() {
 
 
 
+
+
+
+
     if (!selectedFile) return false;
+
+
+
+
 
 
 
     return Object.entries(matches).some(
 
+
+
       ([otherRequirementId, otherFileId]) => {
+
+
 
         if (otherRequirementId === requirementId) {
 
+
+
           return false;
 
+
+
         }
+
+
+
+
 
 
 
@@ -1011,77 +2020,155 @@ function App() {
 
 
 
+
+
+
+
         if (!otherFile) {
 
+
+
           return false;
+
+
 
         }
 
 
 
+
+
+
+
         return otherFile.hash === selectedFile.hash;
+
+
 
       }
 
+
+
     );
+
+
 
   }
 
 
 
+
+
+
+
   function handleMatch(requirementId, fileId) {
 
+
+
     setGenerateSuccess("");
+
+
 
     setGenerateError("");
 
 
 
+
+
+
+
     if (!fileId) {
+
+
 
       setMatches((previousMatches) => {
 
+
+
         const updated = { ...previousMatches };
+
+
 
         delete updated[requirementId];
 
+
+
         return updated;
+
+
 
       });
 
 
 
+
+
+
+
       return;
 
+
+
     }
+
+
+
+
 
 
 
     if (fileUsedByAnotherRequirement(fileId, requirementId)) {
 
+
+
       setPdfError(
+
+
 
         "This PDF is already matched to another requirement."
 
+
+
       );
+
+
 
       return;
 
+
+
     }
+
+
+
+
 
 
 
     if (duplicateContentUsedElsewhere(fileId, requirementId)) {
 
+
+
       setPdfError(
+
+
 
         "A duplicate copy of this PDF content is already matched to another requirement."
 
+
+
       );
+
+
 
       return;
 
+
+
     }
+
+
+
+
 
 
 
@@ -1089,235 +2176,471 @@ function App() {
 
 
 
+
+
+
+
     setMatches((previousMatches) => ({
+
+
 
       ...previousMatches,
 
+
+
       [requirementId]: fileId,
+
+
 
     }));
 
+
+
   }
+
+
+
+
 
 
 
   function handleExpiry(requirementId, value) {
 
+
+
     setGenerateSuccess("");
+
+
 
     setGenerateError("");
 
 
 
+
+
+
+
     setExpiryDates((previousDates) => ({
+
+
 
       ...previousDates,
 
+
+
       [requirementId]: value,
+
+
 
     }));
 
+
+
   }
+
+
+
+
 
 
 
   function getRequirementStatus(requirement) {
 
+
+
     const matchedFileId = matches[requirement.id];
+
+
+
+
 
 
 
     if (!matchedFileId) {
 
+
+
       if (requirement.mandatory) {
+
+
 
         return {
 
+
+
           key: "missing",
+
+
 
           label: t.missing,
 
+
+
           blocking: true,
+
+
 
         };
 
+
+
       }
+
+
+
+
 
 
 
       return {
 
+
+
         key: "not-provided",
+
+
 
         label: t.notProvided,
 
+
+
         blocking: false,
+
+
 
       };
 
+
+
     }
+
+
+
+
 
 
 
     if (requirement.has_expiry) {
 
+
+
       const expiry = expiryDates[requirement.id];
+
+
+
+
 
 
 
       if (!expiry) {
 
+
+
         return {
+
+
 
           key: "expiry-needed",
 
+
+
           label: t.expiryNeeded,
+
+
 
           blocking: true,
 
+
+
         };
 
+
+
       }
+
+
+
+
 
 
 
       if (expiry < tender.submission_deadline) {
 
+
+
         return {
+
+
 
           key: "expired",
 
+
+
           label: t.expired,
+
+
 
           blocking: true,
 
+
+
         };
+
+
 
       }
 
+
+
     }
+
+
+
+
 
 
 
     return {
 
+
+
       key: "ok",
+
+
 
       label: t.ok,
 
+
+
       blocking: false,
 
+
+
     };
+
+
 
   }
 
 
 
+
+
+
+
   const validationResults = requirements.map((requirement) => ({
+
+
 
     requirement,
 
+
+
     status: getRequirementStatus(requirement),
+
+
 
   }));
 
 
 
+
+
+
+
   const blockingCount = validationResults.filter(
+
+
 
     (result) => result.status.blocking
 
+
+
   ).length;
+
+
+
+
 
 
 
   const okCount = validationResults.filter(
 
+
+
     (result) => result.status.key === "ok"
 
+
+
   ).length;
+
+
+
+
 
 
 
   const totalPages = pdfFiles.reduce(
 
+
+
     (total, file) => total + file.pages,
+
+
 
     0
 
+
+
   );
+
+
+
+
 
 
 
   const totalSize = pdfFiles.reduce(
 
+
+
     (total, file) => total + file.size,
 
+
+
     0
+
+
 
   );
 
 
 
+
+
+
+
   const duplicateCount = pdfFiles.filter((file) =>
+
+
 
     isDuplicateFile(file)
 
+
+
   ).length;
+
+
+
+
 
 
 
   const includedCount = requirements.filter(
 
+
+
     (requirement) => matches[requirement.id]
+
+
 
   ).length;
 
 
 
+
+
+
+
   function exportChecklistCSV() {
+
+
 
     if (!tender || requirements.length === 0) {
 
+
+
       return;
+
+
 
     }
 
 
 
+
+
+
+
     const rows = [
+
+
 
       [
 
+
+
         "Order",
+
+
 
         "Requirement ID",
 
+
+
         "Title English",
+
+
 
         "Title Bangla",
 
+
+
         "Required / Optional",
+
+
 
         "Has Expiry",
 
+
+
         "Status",
+
+
 
         "Matched File",
 
+
+
         "Expiry Date",
+
+
 
         "Submission Deadline",
 
+
+
       ],
+
+
 
     ];
 
 
 
+
+
+
+
     requirements.forEach((requirement) => {
 
+
+
       const status = getRequirementStatus(requirement);
+
+
+
+
 
 
 
@@ -1325,69 +2648,139 @@ function App() {
 
 
 
+
+
+
+
       const matchedFile = matchedFileId
 
+
+
         ? getFileById(matchedFileId)
+
+
 
         : null;
 
 
 
+
+
+
+
       rows.push([
+
+
 
         requirement.order,
 
+
+
         requirement.id,
+
+
 
         requirement.title_en || "",
 
+
+
         requirement.title_bn || "",
+
+
 
         requirement.mandatory ? "Required" : "Optional",
 
+
+
         requirement.has_expiry ? "Yes" : "No",
+
+
 
         status.label,
 
+
+
         matchedFile ? matchedFile.name : "",
+
+
 
         requirement.has_expiry
 
+
+
           ? expiryDates[requirement.id] || ""
+
+
 
           : "N/A",
 
+
+
         tender.submission_deadline,
+
+
 
       ]);
 
+
+
     });
+
+
+
+
 
 
 
     const escapeCSV = (value) => {
 
+
+
       const stringValue = String(value ?? "");
 
+
+
       return `"${stringValue.replace(/"/g, '""')}"`;
+
+
 
     };
 
 
 
+
+
+
+
     const csvContent = rows
 
+
+
       .map((row) => row.map(escapeCSV).join(","))
+
+
 
       .join("\n");
 
 
 
+
+
+
+
     const blob = new Blob(["\uFEFF" + csvContent], {
+
+
 
       type: "text/csv;charset=utf-8;",
 
+
+
     });
+
+
+
+
 
 
 
@@ -1395,95 +2788,191 @@ function App() {
 
 
 
+
+
+
+
     const link = document.createElement("a");
+
+
+
+
 
 
 
     link.href = url;
 
+
+
     link.download = `${tender.tender_id}_Checklist.csv`;
+
+
+
+
 
 
 
     document.body.appendChild(link);
 
+
+
     link.click();
+
+
 
     link.remove();
 
 
 
+
+
+
+
     setTimeout(() => {
+
+
 
       URL.revokeObjectURL(url);
 
+
+
     }, 1000);
+
+
 
   }
 
 
 
+
+
+
+
   async function generatePackage() {
+
+
 
     if (!tender) {
 
+
+
       setGenerateError("Tender information is not loaded.");
+
+
 
       return;
 
+
+
     }
+
+
+
+
 
 
 
     if (blockingCount > 0) {
 
+
+
       setGenerateError(
+
+
 
         "Resolve all blocking issues before generating the package."
 
+
+
       );
 
+
+
       return;
+
+
 
     }
 
 
 
+
+
+
+
     setIsGenerating(true);
 
+
+
     setGenerateError("");
+
+
 
     setGenerateSuccess("");
 
 
 
+
+
+
+
     try {
+
+
 
       const outputPdf = await PDFDocument.create();
 
 
 
+
+
+
+
       const regularFont = await outputPdf.embedFont(
+
+
 
         StandardFonts.Helvetica
 
+
+
       );
+
+
+
+
 
 
 
       const boldFont = await outputPdf.embedFont(
 
+
+
         StandardFonts.HelveticaBold
+
+
 
       );
 
 
 
+
+
+
+
       const includedRequirements = requirements
+
+
 
         .filter((requirement) => matches[requirement.id])
 
+
+
         .sort((a, b) => Number(a.order) - Number(b.order));
+
+
+
+
 
 
 
@@ -1491,15 +2980,31 @@ function App() {
 
 
 
+
+
+
+
       const documentIndex = [];
+
+
+
+
 
 
 
       for (const requirement of includedRequirements) {
 
+
+
         const fileId = matches[requirement.id];
 
+
+
         const matchedFile = getFileById(fileId);
+
+
+
+
 
 
 
@@ -1507,113 +3012,227 @@ function App() {
 
 
 
+
+
+
+
         documentIndex.push({
+
+
 
           requirement,
 
+
+
           file: matchedFile,
 
+
+
           startPage: currentStartPage,
+
+
 
         });
 
 
 
+
+
+
+
         currentStartPage += matchedFile.pages;
+
+
 
       }
 
 
 
+
+
+
+
       const coverWidth = 595.28;
+
+
 
       const coverHeight = 841.89;
 
 
 
+
+
+
+
       /*
 
+
+
       =============================================
+
+
 
       COVER PAGE
 
+
+
       =============================================
+
+
 
       */
 
 
 
+
+
+
+
       const coverPage = outputPdf.addPage([
+
+
 
         coverWidth,
 
+
+
         coverHeight,
+
+
 
       ]);
 
 
 
+
+
+
+
       coverPage.drawRectangle({
+
+
 
         x: 0,
 
+
+
         y: coverHeight - 170,
+
+
 
         width: coverWidth,
 
+
+
         height: 170,
+
+
 
         color: rgb(0.035, 0.12, 0.25),
 
+
+
       });
+
+
+
+
 
 
 
       coverPage.drawRectangle({
 
+
+
         x: 0,
+
+
 
         y: coverHeight - 170,
 
+
+
         width: 8,
+
+
 
         height: 170,
 
+
+
         color: rgb(0.15, 0.48, 0.9),
 
+
+
       });
+
+
+
+
 
 
 
       coverPage.drawText("TENDER DOCUMENT PACKAGE", {
 
+
+
         x: 42,
+
+
 
         y: coverHeight - 54,
 
+
+
         size: 10,
+
+
 
         font: boldFont,
 
+
+
         color: rgb(0.35, 0.68, 1),
 
+
+
       });
+
+
+
+
 
 
 
       coverPage.drawText(String(tender.tender_id), {
 
+
+
         x: 42,
+
+
 
         y: coverHeight - 94,
 
+
+
         size: 25,
+
+
 
         font: boldFont,
 
+
+
         color: rgb(1, 1, 1),
 
+
+
       });
+
+
+
+
 
 
 
@@ -1621,49 +3240,99 @@ function App() {
 
 
 
+
+
+
+
       if (tenderTitle.length > 67) {
 
+
+
         tenderTitle = tenderTitle.slice(0, 64) + "...";
+
+
 
       }
 
 
 
+
+
+
+
       coverPage.drawText(tenderTitle, {
+
+
 
         x: 42,
 
+
+
         y: coverHeight - 128,
+
+
 
         size: 13,
 
+
+
         font: regularFont,
 
+
+
         color: rgb(0.84, 0.9, 0.97),
+
+
 
       });
 
 
 
+
+
+
+
       coverPage.drawText(
+
+
 
         "Submission-ready tender document package",
 
+
+
         {
+
+
 
           x: 42,
 
+
+
           y: coverHeight - 151,
+
+
 
           size: 8.5,
 
+
+
           font: regularFont,
+
+
 
           color: rgb(0.56, 0.7, 0.84),
 
+
+
         }
 
+
+
       );
+
+
+
+
 
 
 
@@ -1671,45 +3340,91 @@ function App() {
 
 
 
+
+
+
+
       const packageDate =
+
+
 
         `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(
 
+
+
           2,
 
+
+
           "0"
+
+
 
         )}-${String(now.getDate()).padStart(2, "0")}`;
 
 
 
+
+
+
+
       /*
 
+
+
       =============================================
+
+
 
       COMPACT TENDER INFORMATION
 
+
+
       =============================================
+
+
 
       */
 
 
 
+
+
+
+
       const coverFields = [
+
+
 
         ["Tender ID", tender.tender_id],
 
+
+
         ["Tender Title", tender.title],
+
+
 
         ["Procuring Entity", tender.procuring_entity],
 
+
+
         ["Bidder", tender.bidder],
+
+
 
         ["Submission Deadline", tender.submission_deadline],
 
+
+
         ["Package Made Date", packageDate],
 
+
+
       ];
+
+
+
+
 
 
 
@@ -1717,21 +3432,43 @@ function App() {
 
 
 
+
+
+
+
       coverFields.forEach(([label, value]) => {
+
+
 
         coverPage.drawText(label.toUpperCase(), {
 
+
+
           x: 42,
+
+
 
           y: fieldY,
 
+
+
           size: 6.5,
+
+
 
           font: boldFont,
 
+
+
           color: rgb(0.43, 0.49, 0.58),
 
+
+
         });
+
+
+
+
 
 
 
@@ -1739,45 +3476,91 @@ function App() {
 
 
 
+
+
+
+
         if (displayValue.length > 77) {
 
+
+
           displayValue = displayValue.slice(0, 74) + "...";
+
+
 
         }
 
 
 
+
+
+
+
         coverPage.drawText(displayValue, {
+
+
 
           x: 42,
 
+
+
           y: fieldY - 14,
+
+
 
           size: 9,
 
+
+
           font: regularFont,
 
+
+
           color: rgb(0.09, 0.14, 0.22),
+
+
 
         });
 
 
 
+
+
+
+
         fieldY -= 38;
+
+
 
       });
 
 
 
+
+
+
+
       /*
 
+
+
       =============================================
+
+
 
       INCLUDED DOCUMENTS - TWO COLUMNS
 
+
+
       =============================================
 
+
+
       */
+
+
+
+
 
 
 
@@ -1785,19 +3568,39 @@ function App() {
 
 
 
+
+
+
+
       coverPage.drawText("INCLUDED DOCUMENTS", {
+
+
 
         x: 42,
 
+
+
         y: documentHeadingY,
+
+
 
         size: 7.5,
 
+
+
         font: boldFont,
+
+
 
         color: rgb(0.15, 0.39, 0.72),
 
+
+
       });
+
+
+
+
 
 
 
@@ -1805,47 +3608,95 @@ function App() {
 
 
 
+
+
+
+
       const leftX = 42;
+
+
 
       const rightX = 304;
 
 
 
+
+
+
+
       const rowHeight = 15;
+
+
 
       const maxRowsPerColumn = 15;
 
 
 
+
+
+
+
       documentIndex.slice(0, 30).forEach((item, index) => {
+
+
 
         const column = index < maxRowsPerColumn ? 0 : 1;
 
 
 
+
+
+
+
         const row =
+
+
 
           index < maxRowsPerColumn
 
+
+
             ? index
+
+
 
             : index - maxRowsPerColumn;
 
 
 
+
+
+
+
         const x = column === 0 ? leftX : rightX;
+
+
 
         const y = listStartY - row * rowHeight;
 
 
 
+
+
+
+
         let title =
+
+
 
           item.requirement.title_en ||
 
+
+
           item.requirement.title_bn ||
 
+
+
           item.requirement.id;
+
+
+
+
 
 
 
@@ -1853,137 +3704,275 @@ function App() {
 
 
 
+
+
+
+
         if (title.length > 32) {
+
+
 
           title = title.slice(0, 29) + "...";
 
+
+
         }
+
+
+
+
 
 
 
         coverPage.drawText(`${index + 1}. ${title}`, {
 
+
+
           x,
+
+
 
           y,
 
+
+
           size: 7.2,
+
+
 
           font: regularFont,
 
+
+
           color: rgb(0.15, 0.19, 0.26),
+
+
 
         });
 
+
+
       });
+
+
+
+
 
 
 
       /*
 
+
+
       =============================================
+
+
 
       DOCUMENT INDEX PAGE
 
+
+
       =============================================
+
+
 
       */
 
 
 
+
+
+
+
       const indexPage = outputPdf.addPage([
+
+
 
         coverWidth,
 
+
+
         coverHeight,
+
+
 
       ]);
 
 
 
+
+
+
+
       indexPage.drawRectangle({
+
+
 
         x: 0,
 
+
+
         y: coverHeight - 125,
+
+
 
         width: coverWidth,
 
+
+
         height: 125,
+
+
 
         color: rgb(0.035, 0.12, 0.25),
 
+
+
       });
+
+
+
+
 
 
 
       indexPage.drawRectangle({
 
+
+
         x: 0,
+
+
 
         y: coverHeight - 125,
 
+
+
         width: 8,
+
+
 
         height: 125,
 
+
+
         color: rgb(0.15, 0.48, 0.9),
 
+
+
       });
+
+
+
+
 
 
 
       indexPage.drawText("DOCUMENT INDEX", {
 
+
+
         x: 45,
+
+
 
         y: coverHeight - 62,
 
+
+
         size: 24,
+
+
 
         font: boldFont,
 
+
+
         color: rgb(1, 1, 1),
 
+
+
       });
+
+
+
+
 
 
 
       indexPage.drawText(String(tender.tender_id), {
 
+
+
         x: 45,
+
+
 
         y: coverHeight - 88,
 
+
+
         size: 10,
+
+
 
         font: regularFont,
 
+
+
         color: rgb(0.55, 0.72, 0.9),
+
+
 
       });
 
 
 
+
+
+
+
       indexPage.drawText(
+
+
 
         "Included documents and starting page numbers",
 
+
+
         {
+
+
 
           x: 45,
 
+
+
           y: coverHeight - 106,
+
+
 
           size: 8,
 
+
+
           font: regularFont,
+
+
 
           color: rgb(0.62, 0.73, 0.86),
 
+
+
         }
 
+
+
       );
+
+
+
+
 
 
 
@@ -1991,67 +3980,135 @@ function App() {
 
 
 
+
+
+
+
       indexPage.drawRectangle({
+
+
 
         x: 40,
 
+
+
         y: indexY - 8,
+
+
 
         width: coverWidth - 80,
 
+
+
         height: 28,
+
+
 
         color: rgb(0.94, 0.96, 0.985),
 
+
+
       });
+
+
+
+
 
 
 
       indexPage.drawText("ORDER", {
 
+
+
         x: 52,
+
+
 
         y: indexY + 1,
 
+
+
         size: 7.5,
+
+
 
         font: boldFont,
 
+
+
         color: rgb(0.35, 0.42, 0.52),
 
+
+
       });
+
+
+
+
 
 
 
       indexPage.drawText("DOCUMENT", {
 
+
+
         x: 110,
+
+
 
         y: indexY + 1,
 
+
+
         size: 7.5,
+
+
 
         font: boldFont,
 
+
+
         color: rgb(0.35, 0.42, 0.52),
 
+
+
       });
+
+
+
+
 
 
 
       indexPage.drawText("START PAGE", {
 
+
+
         x: 465,
+
+
 
         y: indexY + 1,
 
+
+
         size: 7.5,
+
+
 
         font: boldFont,
 
+
+
         color: rgb(0.35, 0.42, 0.52),
 
+
+
       });
+
+
+
+
 
 
 
@@ -2059,15 +4116,31 @@ function App() {
 
 
 
+
+
+
+
       documentIndex.forEach((item) => {
+
+
 
         let documentTitle =
 
+
+
           item.requirement.title_en ||
+
+
 
           item.requirement.title_bn ||
 
+
+
           item.requirement.id;
+
+
+
+
 
 
 
@@ -2075,109 +4148,219 @@ function App() {
 
 
 
+
+
+
+
         if (documentTitle.length > 48) {
 
+
+
           documentTitle = documentTitle.slice(0, 45) + "...";
+
+
 
         }
 
 
 
+
+
+
+
         indexPage.drawText(
+
+
 
           String(item.requirement.order),
 
+
+
           {
+
+
 
             x: 55,
 
+
+
             y: indexY,
+
+
 
             size: 7.5,
 
+
+
             font: boldFont,
+
+
 
             color: rgb(0.15, 0.38, 0.7),
 
+
+
           }
+
+
 
         );
 
 
 
+
+
+
+
         indexPage.drawText(documentTitle, {
+
+
 
           x: 110,
 
+
+
           y: indexY,
+
+
 
           size: 7.5,
 
+
+
           font: regularFont,
+
+
 
           color: rgb(0.12, 0.17, 0.25),
 
+
+
         });
+
+
+
+
 
 
 
         indexPage.drawText(String(item.startPage), {
 
+
+
           x: 500,
+
+
 
           y: indexY,
 
+
+
           size: 7.5,
+
+
 
           font: boldFont,
 
+
+
           color: rgb(0.1, 0.42, 0.25),
 
+
+
         });
+
+
+
+
 
 
 
         indexPage.drawLine({
 
+
+
           start: {
+
+
 
             x: 45,
 
+
+
             y: indexY - 8,
 
+
+
           },
+
+
 
           end: {
 
+
+
             x: coverWidth - 45,
+
+
 
             y: indexY - 8,
 
+
+
           },
+
+
 
           thickness: 0.35,
 
+
+
           color: rgb(0.86, 0.89, 0.93),
+
+
 
         });
 
 
 
+
+
+
+
         indexY -= 20;
+
+
 
       });
 
 
 
+
+
+
+
       /*
 
+
+
       =============================================
+
+
 
       ORIGINAL DOCUMENTS
 
+
+
       =============================================
 
+
+
       */
+
+
+
+
 
 
 
@@ -2185,9 +4368,19 @@ function App() {
 
 
 
+
+
+
+
       for (const item of documentIndex) {
 
+
+
         const matchedFile = item.file;
+
+
+
+
 
 
 
@@ -2195,7 +4388,15 @@ function App() {
 
 
 
+
+
+
+
         const sourcePdf = await PDFDocument.load(sourceBytes);
+
+
+
+
 
 
 
@@ -2203,17 +4404,35 @@ function App() {
 
 
 
+
+
+
+
         for (
+
+
 
           let pageIndex = 0;
 
+
+
           pageIndex < sourcePages.length;
+
+
 
           pageIndex++
 
+
+
         ) {
 
+
+
           const sourcePage = sourcePages[pageIndex];
+
+
+
+
 
 
 
@@ -2221,13 +4440,27 @@ function App() {
 
 
 
+
+
+
+
           const embeddedPages = await outputPdf.embedPdf(
+
+
 
             sourcePdf,
 
+
+
             [pageIndex]
 
+
+
           );
+
+
+
+
 
 
 
@@ -2235,81 +4468,163 @@ function App() {
 
 
 
+
+
+
+
           /*
+
+
 
           We add a 30pt footer area below the original
 
+
+
           document so page numbering does not cover
 
+
+
           original document content.
+
+
 
           */
 
 
 
+
+
+
+
           const newPage = outputPdf.addPage([
+
+
 
             width,
 
+
+
             height + footerHeight,
+
+
 
           ]);
 
 
 
+
+
+
+
           newPage.drawPage(embeddedPage, {
+
+
 
             x: 0,
 
+
+
             y: footerHeight,
+
+
 
             width,
 
+
+
             height,
 
+
+
           });
+
+
+
+
 
 
 
           newPage.drawLine({
 
+
+
             start: {
+
+
 
               x: 20,
 
+
+
               y: footerHeight - 1,
 
+
+
             },
+
+
 
             end: {
 
+
+
               x: width - 20,
+
+
 
               y: footerHeight - 1,
 
+
+
             },
+
+
 
             thickness: 0.4,
 
+
+
             color: rgb(0.82, 0.84, 0.87),
+
+
 
           });
 
+
+
         }
+
+
 
       }
 
 
 
+
+
+
+
       /*
 
+
+
       =============================================
+
+
 
       FOOTER ON EVERY PAGE
 
+
+
       =============================================
 
+
+
       */
+
+
+
+
 
 
 
@@ -2317,19 +4632,39 @@ function App() {
 
 
 
+
+
+
+
       const totalOutputPages = outputPages.length;
+
+
+
+
 
 
 
       outputPages.forEach((page, index) => {
 
+
+
         const { width } = page.getSize();
+
+
+
+
 
 
 
         const footerText =
 
+
+
           `${tender.tender_id} | Page ${index + 1} of ${totalOutputPages}`;
+
+
+
+
 
 
 
@@ -2337,43 +4672,87 @@ function App() {
 
 
 
+
+
+
+
         const textWidth = regularFont.widthOfTextAtSize(
+
+
 
           footerText,
 
+
+
           fontSize
+
+
 
         );
 
 
 
+
+
+
+
         page.drawText(footerText, {
+
+
 
           x: (width - textWidth) / 2,
 
+
+
           y: 10,
+
+
 
           size: fontSize,
 
+
+
           font: regularFont,
+
+
 
           color: rgb(0.35, 0.39, 0.45),
 
+
+
         });
+
+
 
       });
 
 
 
+
+
+
+
       /*
 
+
+
       =============================================
+
+
 
       DOWNLOAD
 
+
+
       =============================================
 
+
+
       */
+
+
+
+
 
 
 
@@ -2381,11 +4760,23 @@ function App() {
 
 
 
+
+
+
+
       const blob = new Blob([pdfBytes], {
+
+
 
         type: "application/pdf",
 
+
+
       });
+
+
+
+
 
 
 
@@ -2393,13 +4784,27 @@ function App() {
 
 
 
+
+
+
+
       const link = document.createElement("a");
+
+
+
+
 
 
 
       link.href = url;
 
+
+
       link.download = `${tender.tender_id}_Package.pdf`;
+
+
+
+
 
 
 
@@ -2407,127 +4812,255 @@ function App() {
 
 
 
+
+
+
+
       link.click();
+
+
 
       link.remove();
 
 
 
+
+
+
+
       setTimeout(() => {
 
+
+
         URL.revokeObjectURL(url);
+
+
 
       }, 1000);
 
 
 
+
+
+
+
       setGenerateSuccess(
+
+
 
         `${tender.tender_id}_Package.pdf generated successfully.`
 
+
+
       );
 
+
+
     } catch (err) {
+
+
 
       console.error(err);
 
 
 
+
+
+
+
       setGenerateError(
+
+
 
         "Could not generate the PDF package. Please check your uploaded PDF files."
 
+
+
       );
+
+
 
     } finally {
 
+
+
       setIsGenerating(false);
 
+
+
     }
+
+
 
   }
 
 
 
+
+
+
+
   return (
+
+
 
     <div className={`app ${theme === "dark" ? "dark-theme" : "light-theme"}`}>
 
+
+
       <header className="navbar">
 
+
+
         <div className="brand">
+
+
 
           <div className="brand-icon">TP</div>
 
 
 
+
+
+
+
           <div>
+
+
 
             <h1>{t.appName}</h1>
 
+
+
             <p>{t.subtitle}</p>
+
+
 
           </div>
 
+
+
         </div>
+
+
+
+
 
 
 
         <div className="nav-actions">
+
           <button
+
             type="button"
+
             className="theme-toggle"
+
             onClick={toggleTheme}
+
             aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+
             title={theme === "dark" ? "Light mode" : "Dark mode"}
+
           >
+
             <span className="theme-toggle-icon">
+
               {theme === "dark" ? "☀" : "☾"}
+
             </span>
+
+
 
             <span className="theme-toggle-text">
+
               {theme === "dark"
+
                 ? language === "bn"
+
                   ? "লাইট"
+
                   : "Light"
+
                 : language === "bn"
+
                 ? "ডার্ক"
+
                 : "Dark"}
+
             </span>
+
           </button>
 
+
+
           <div className="language-switch">
-            <button
-              className={language === "en" ? "active" : ""}
-              onClick={() => setLanguage("en")}
-            >
-              EN
-            </button>
 
             <button
-              className={language === "bn" ? "active" : ""}
-              onClick={() => setLanguage("bn")}
+
+              className={language === "en" ? "active" : ""}
+
+              onClick={() => setLanguage("en")}
+
             >
-              বাংলা
+
+              EN
+
             </button>
+
+
+
+            <button
+
+              className={language === "bn" ? "active" : ""}
+
+              onClick={() => setLanguage("bn")}
+
+            >
+
+              বাংলা
+
+            </button>
+
           </div>
+
         </div>
+
+
 
       </header>
 
 
 
+
+
+
+
       <main className="container">
+
+
 
         <section className="hero">
 
+
+
           <div>
+
+
 
             <span className="hero-badge">
 
+
+
               AI DEVFEST 2026
 
+
+
             </span>
+
+
+
+
 
 
 
@@ -2535,57 +5068,115 @@ function App() {
 
 
 
+
+
+
+
             <p>{t.heroText}</p>
+
+
+
+
 
 
 
             <div className="privacy-pill">
 
+
+
               <span>●</span>
+
+
 
               {t.browserNotice}
 
+
+
             </div>
 
+
+
           </div>
+
+
+
+
 
 
 
           <div className="hero-decoration">
 
+
+
             <div className="document-icon">
+
+
 
               <span>PDF</span>
 
+
+
               <small>PACKAGE</small>
+
+
 
             </div>
 
+
+
           </div>
+
+
 
         </section>
 
 
 
+
+
+
+
         {error && (
 
+
+
           <div className="alert alert-error">
+
+
 
             <span>!</span>
 
 
 
+
+
+
+
             <div>
+
+
 
               <strong>{t.fileError}</strong>
 
+
+
               <p>{error}</p>
+
+
 
             </div>
 
+
+
           </div>
 
+
+
         )}
+
+
+
+
 
 
 
@@ -2593,45 +5184,91 @@ function App() {
 
 
 
+
+
+
+
         <section className="card">
+
+
 
           <div className="section-heading">
 
+
+
             <div>
+
+
 
               <span className="step-badge">
 
+
+
                 {t.step1}
 
+
+
               </span>
+
+
+
+
 
 
 
               <h3>{t.loadTitle}</h3>
 
+
+
               <p>{t.loadText}</p>
+
+
 
             </div>
 
 
 
+
+
+
+
             {tender && (
+
+
 
               <span className="success-badge">
 
+
+
                 ✓ {t.loaded}
+
+
 
               </span>
 
+
+
             )}
+
+
 
           </div>
 
 
 
+
+
+
+
           <label className="upload-area">
 
+
+
             <div className="upload-icon">↑</div>
+
+
+
+
 
 
 
@@ -2639,123 +5276,247 @@ function App() {
 
 
 
+
+
+
+
             <span>
 
+
+
               JSON • requirements.json
+
+
 
             </span>
 
 
 
+
+
+
+
             <input
+
+
 
               type="file"
 
+
+
               accept=".json,application/json"
+
+
 
               onChange={handleJSONUpload}
 
+
+
             />
 
+
+
           </label>
+
+
 
         </section>
 
 
 
+
+
+
+
         {tender && (
 
+
+
           <>
+
+
 
             {/* TENDER INFO */}
 
 
 
+
+
+
+
             <section className="card">
+
+
 
               <div className="section-title-row">
 
+
+
                 <div>
+
+
 
                   <span className="eyebrow">
 
+
+
                     TENDER
+
+
 
                   </span>
 
 
 
+
+
+
+
                   <h3>{t.tenderInfo}</h3>
 
+
+
                 </div>
+
+
+
+
 
 
 
                 <div className="tender-number">
 
+
+
                   {tender.tender_id}
+
+
 
                 </div>
 
+
+
               </div>
+
+
+
+
 
 
 
               <div className="info-grid">
 
+
+
                 <InfoBox
+
+
 
                   label={t.tenderId}
 
+
+
                   value={tender.tender_id}
+
+
 
                 />
 
 
 
+
+
+
+
                 <InfoBox
+
+
 
                   label={t.title}
 
+
+
                   value={tender.title}
+
+
 
                 />
 
 
 
+
+
+
+
                 <InfoBox
+
+
 
                   label={t.entity}
 
+
+
                   value={tender.procuring_entity}
+
+
 
                 />
 
 
 
+
+
+
+
                 <InfoBox
+
+
 
                   label={t.bidder}
 
+
+
                   value={tender.bidder}
 
+
+
                 />
+
+
+
+
 
 
 
                 <InfoBox
 
+
+
                   label={t.deadline}
+
+
 
                   value={tender.submission_deadline}
 
+
+
                   full
+
+
 
                 />
 
+
+
               </div>
 
+
+
             </section>
+
+
+
+
 
 
 
@@ -2763,165 +5524,331 @@ function App() {
 
 
 
+
+
+
+
             <section className="card">
+
+
 
               <div className="section-title-row">
 
+
+
                 <div>
+
+
 
                   <span className="eyebrow">
 
+
+
                     CHECKLIST
+
+
 
                   </span>
 
 
 
+
+
+
+
                   <h3>{t.checklist}</h3>
 
+
+
                 </div>
+
+
+
+
 
 
 
                 <div className="count-badge">
 
+
+
                   {requirements.length} {t.documents}
+
+
 
                 </div>
 
+
+
               </div>
+
+
+
+
 
 
 
               <div className="table-container">
 
+
+
                 <table>
+
+
 
                   <thead>
 
+
+
                     <tr>
+
+
 
                       <th>{t.order}</th>
 
+
+
                       <th>{t.document}</th>
+
+
 
                       <th>{t.type}</th>
 
+
+
                       <th>{t.expiry}</th>
 
+
+
                     </tr>
+
+
 
                   </thead>
 
 
 
+
+
+
+
                   <tbody>
+
+
 
                     {requirements.map((requirement) => (
 
+
+
                       <tr key={requirement.id}>
+
+
 
                         <td>
 
+
+
                           <span className="order-number">
+
+
 
                             {requirement.order}
 
+
+
                           </span>
+
+
 
                         </td>
 
 
 
+
+
+
+
                         <td>
+
+
 
                           <div className="document-name">
 
+
+
                             <strong>
 
+
+
                               {getDocumentTitle(requirement)}
+
+
 
                             </strong>
 
 
 
+
+
+
+
                             <span>
+
+
 
                               {requirement.id}
 
+
+
                             </span>
+
+
 
                           </div>
 
+
+
                         </td>
+
+
+
+
 
 
 
                         <td>
 
+
+
                           <span
 
+
+
                             className={`tag ${
+
+
 
                               requirement.mandatory
 
+
+
                                 ? "required"
+
+
 
                                 : "optional"
 
+
+
                             }`}
+
+
 
                           >
 
+
+
                             {requirement.mandatory
+
+
 
                               ? t.required
 
+
+
                               : t.optional}
+
+
 
                           </span>
 
+
+
                         </td>
+
+
+
+
 
 
 
                         <td>
 
+
+
                           <span
+
+
 
                             className={`tag ${
 
+
+
                               requirement.has_expiry
+
+
 
                                 ? "expiry-yes"
 
+
+
                                 : "expiry-no"
+
+
 
                             }`}
 
+
+
                           >
+
+
 
                             {requirement.has_expiry
 
+
+
                               ? t.yes
+
+
 
                               : t.no}
 
+
+
                           </span>
+
+
 
                         </td>
 
+
+
                       </tr>
+
+
 
                     ))}
 
+
+
                   </tbody>
+
+
 
                 </table>
 
+
+
               </div>
 
+
+
             </section>
+
+
+
+
 
 
 
@@ -2929,73 +5856,147 @@ function App() {
 
 
 
+
+
+
+
             <section className="card">
+
+
 
               <div className="section-heading">
 
+
+
                 <div>
+
+
 
                   <span className="step-badge">
 
+
+
                     {t.step2}
 
+
+
                   </span>
+
+
+
+
 
 
 
                   <h3>{t.pdfTitle}</h3>
 
+
+
                   <p>{t.pdfText}</p>
 
+
+
                 </div>
+
+
+
+
 
 
 
                 {pdfFiles.length > 0 && (
 
+
+
                   <span className="count-badge">
+
+
 
                     {pdfFiles.length} / 30 PDF
 
+
+
                   </span>
 
+
+
                 )}
+
+
 
               </div>
 
 
 
+
+
+
+
               {pdfError && (
 
+
+
                 <div className="alert alert-error">
+
+
 
                   <span>!</span>
 
 
 
+
+
+
+
                   <div>
+
+
 
                     <strong>
 
+
+
                       {t.pdfErrorTitle}
+
+
 
                     </strong>
 
 
 
+
+
+
+
                     <p>{pdfError}</p>
+
+
 
                   </div>
 
+
+
                 </div>
+
+
 
               )}
 
 
 
+
+
+
+
               <label className="upload-area pdf-upload-area">
 
+
+
                 <div className="upload-icon">↑</div>
+
+
+
+
 
 
 
@@ -3003,251 +6004,503 @@ function App() {
 
 
 
+
+
+
+
                 <span>{t.pdfHint}</span>
+
+
+
+
 
 
 
                 <input
 
+
+
                   type="file"
+
+
 
                   accept=".pdf,application/pdf"
 
+
+
                   multiple
+
+
 
                   onChange={handlePDFUpload}
 
+
+
                 />
+
+
 
               </label>
 
 
 
+
+
+
+
               {isReadingPDF && (
+
+
 
                 <div className="processing-box">
 
+
+
                   <div className="spinner" />
+
+
 
                   <span>{t.processing}</span>
 
+
+
                 </div>
 
+
+
               )}
+
+
+
+
 
 
 
               {pdfFiles.length > 0 && (
 
+
+
                 <div className="pdf-stats">
 
+
+
                   <StatBox
+
+
 
                     label={t.totalFiles}
 
+
+
                     value={`${pdfFiles.length} / 30`}
+
+
 
                     warning={pdfFiles.length >= 30}
 
+
+
                   />
 
 
 
+
+
+
+
                   <StatBox
+
+
 
                     label={t.totalPages}
 
+
+
                     value={totalPages}
+
+
 
                   />
 
 
 
+
+
+
+
                   <StatBox
+
+
 
                     label={t.totalSize}
 
+
+
                     value={`${formatFileSize(totalSize)} / 50 MB`}
+
+
 
                     warning={
 
+
+
                       totalSize >=
+
+
 
                       45 * 1024 * 1024
 
+
+
                     }
 
+
+
                   />
+
+
+
+
 
 
 
                   <StatBox
 
+
+
                     label={t.duplicates}
+
+
 
                     value={duplicateCount}
 
+
+
                     warning={duplicateCount > 0}
+
+
 
                   />
 
+
+
                 </div>
+
+
 
               )}
 
 
 
+
+
+
+
               <div className="uploaded-section">
 
+
+
                 <div className="uploaded-heading">
+
+
 
                   <h4>{t.uploadedFiles}</h4>
 
 
 
+
+
+
+
                   <span>
+
+
 
                     {pdfFiles.length} {t.files}
 
+
+
                   </span>
+
+
 
                 </div>
 
 
 
+
+
+
+
                 {pdfFiles.length === 0 ? (
+
+
 
                   <div className="empty-state">
 
+
+
                     <div>PDF</div>
+
+
 
                     <p>{t.noFiles}</p>
 
+
+
                   </div>
+
+
 
                 ) : (
 
+
+
                   <div className="pdf-list">
+
+
 
                     {pdfFiles.map((pdf) => {
 
+
+
                       const duplicate =
+
+
 
                         isDuplicateFile(pdf);
 
 
 
+
+
+
+
                       return (
+
+
 
                         <div
 
+
+
                           className={`pdf-item ${
+
+
 
                             duplicate
 
+
+
                               ? "pdf-duplicate"
+
+
 
                               : ""
 
+
+
                           }`}
+
+
 
                           key={pdf.id}
 
+
+
                         >
+
+
 
                           <div className="pdf-file-icon">
 
+
+
                             PDF
 
+
+
                           </div>
+
+
+
+
 
 
 
                           <div className="pdf-details">
 
+
+
                             <strong>
 
+
+
                               {pdf.name}
+
+
 
                             </strong>
 
 
 
+
+
+
+
                             <span>
+
+
 
                               {formatFileSize(pdf.size)}
 
+
+
                               {" • "}
+
+
 
                               {pdf.pages}{" "}
 
+
+
                               {pdf.pages === 1
+
+
 
                                 ? t.page
 
+
+
                                 : t.pages}
+
+
 
                             </span>
 
+
+
                           </div>
+
+
+
+
 
 
 
                           <div className="pdf-status">
 
+
+
                             {duplicate ? (
+
+
 
                               <span className="duplicate-badge">
 
+
+
                                 ⚠ {t.duplicate}
 
+
+
                               </span>
+
+
 
                             ) : (
 
+
+
                               <span className="unique-badge">
+
+
 
                                 ✓ {t.ready}
 
+
+
                               </span>
 
+
+
                             )}
+
+
 
                           </div>
 
 
 
+
+
+
+
                           <button
+
+
 
                             type="button"
 
+
+
                             className="remove-button"
+
+
 
                             onClick={() =>
 
+
+
                               removePDF(pdf.id)
+
+
 
                             }
 
+
+
                           >
+
+
 
                             {t.remove}
 
+
+
                           </button>
+
+
 
                         </div>
 
+
+
                       );
+
+
 
                     })}
 
+
+
                   </div>
+
+
 
                 )}
 
+
+
               </div>
 
+
+
             </section>
+
+
+
+
 
 
 
@@ -3255,327 +6508,655 @@ function App() {
 
 
 
+
+
+
+
             <section className="card">
+
+
 
               <div className="section-heading">
 
+
+
                 <div>
+
+
 
                   <span className="step-badge">
 
+
+
                     {t.step3}
+
+
 
                   </span>
 
 
 
+
+
+
+
                   <h3>{t.matchTitle}</h3>
+
+
 
                   <p>{t.matchText}</p>
 
+
+
                 </div>
 
+
+
               </div>
+
+
+
+
 
 
 
               <div className="validation-summary">
 
+
+
                 <div
+
+
 
                   className={`validation-box ${
 
+
+
                     blockingCount > 0
+
+
 
                       ? "danger-summary"
 
+
+
                       : "success-summary"
+
+
 
                   }`}
 
+
+
                 >
+
+
 
                   <span>{t.blockingIssues}</span>
 
+
+
                   <strong>{blockingCount}</strong>
 
+
+
                 </div>
+
+
+
+
 
 
 
                 <div className="validation-box success-summary">
 
+
+
                   <span>{t.readyDocuments}</span>
+
+
 
                   <strong>{okCount}</strong>
 
+
+
                 </div>
 
+
+
               </div>
+
+
+
+
 
 
 
               <div className="match-list">
 
+
+
                 {requirements.map((requirement) => {
 
+
+
                   const status =
+
+
 
                     getRequirementStatus(requirement);
 
 
 
+
+
+
+
                   const matchedFileId =
+
+
 
                     matches[requirement.id];
 
 
 
+
+
+
+
                   return (
+
+
 
                     <div
 
+
+
                       className="match-card"
+
+
 
                       key={requirement.id}
 
+
+
                     >
+
+
 
                       <div className="match-card-top">
 
+
+
                         <div className="match-document">
+
+
 
                           <span className="match-order">
 
+
+
                             {requirement.order}
+
+
 
                           </span>
 
 
 
+
+
+
+
                           <div>
+
+
 
                             <strong>
 
+
+
                               {getDocumentTitle(
+
+
 
                                 requirement
 
+
+
                               )}
+
+
 
                             </strong>
 
 
 
+
+
+
+
                             <small>
+
+
 
                               {requirement.id} •{" "}
 
+
+
                               {requirement.mandatory
+
+
 
                                 ? t.required
 
+
+
                                 : t.optional}
+
+
 
                             </small>
 
+
+
                           </div>
 
+
+
                         </div>
+
+
+
+
 
 
 
                         <StatusBadge
 
+
+
                           status={status}
+
+
 
                         />
 
+
+
                       </div>
+
+
+
+
 
 
 
                       <div className="match-fields">
 
+
+
                         <div className="form-group">
+
+
 
                           <label>
 
+
+
                             {t.matchedFile}
+
+
 
                           </label>
 
 
 
+
+
+
+
                           <select
+
+
 
                             value={
 
+
+
                               matchedFileId || ""
 
+
+
                             }
+
+
 
                             onChange={(event) =>
 
+
+
                               handleMatch(
+
+
 
                                 requirement.id,
 
+
+
                                 event.target.value
+
+
 
                               )
 
+
+
                             }
+
+
 
                           >
 
+
+
                             <option value="">
 
+
+
                               {t.selectPDF}
+
+
 
                             </option>
 
 
 
+
+
+
+
                             {pdfFiles.map((pdf) => {
+
+
 
                               const used =
 
+
+
                                 fileUsedByAnotherRequirement(
+
+
 
                                   pdf.id,
 
+
+
                                   requirement.id
 
+
+
                                 );
+
+
+
+
 
 
 
                               const duplicateUsed =
 
+
+
                                 duplicateContentUsedElsewhere(
+
+
 
                                   pdf.id,
 
+
+
                                   requirement.id
+
+
 
                                 );
 
 
 
+
+
+
+
                               return (
+
+
 
                                 <option
 
+
+
                                   value={pdf.id}
+
+
 
                                   key={pdf.id}
 
+
+
                                   disabled={
+
+
 
                                     used ||
 
+
+
                                     duplicateUsed
+
+
 
                                   }
 
+
+
                                 >
+
+
 
                                   {pdf.name}
 
+
+
                                   {used
+
+
 
                                     ? ` — ${t.alreadyUsed}`
 
+
+
                                     : duplicateUsed
+
+
 
                                     ? ` — ${t.duplicateAlreadyUsed}`
 
+
+
                                     : ""}
+
+
 
                                 </option>
 
+
+
                               );
+
+
 
                             })}
 
+
+
                           </select>
+
+
 
                         </div>
 
 
 
+
+
+
+
                         {requirement.has_expiry &&
+
+
 
                           matchedFileId && (
 
+
+
                             <div className="form-group">
+
+
 
                               <label>
 
+
+
                                 {t.expiryDate}
+
+
 
                               </label>
 
 
 
+
+
+
+
                               <input
+
+
 
                                 type="date"
 
+
+
                                 value={
+
+
 
                                   expiryDates[
 
+
+
                                     requirement.id
+
+
 
                                   ] || ""
 
+
+
                                 }
+
+
 
                                 onChange={(event) =>
 
+
+
                                   handleExpiry(
+
+
 
                                     requirement.id,
 
+
+
                                     event.target.value
+
+
 
                                   )
 
+
+
                                 }
+
+
 
                               />
 
 
 
+
+
+
+
                               <small>
+
+
 
                                 {t.submissionDeadlineLabel}:{" "}
 
+
+
                                 {
+
+
 
                                   tender.submission_deadline
 
+
+
                                 }
+
+
 
                               </small>
 
+
+
                             </div>
+
+
 
                           )}
 
+
+
                       </div>
+
+
 
                     </div>
 
+
+
                   );
+
+
 
                 })}
 
+
+
               </div>
 
+
+
             </section>
+
+
+
+
 
 
 
@@ -3583,495 +7164,991 @@ function App() {
 
 
 
+
+
+
+
             <section className="card generate-card">
+
+
 
               <div className="section-heading">
 
+
+
                 <div>
+
+
 
                   <span className="step-badge">
 
+
+
                     {t.step4}
 
+
+
                   </span>
+
+
+
+
 
 
 
                   <h3>{t.generateTitle}</h3>
 
+
+
                   <p>{t.generateText}</p>
 
+
+
                 </div>
+
+
 
               </div>
 
 
 
+
+
+
+
               <div
+
+
 
                 className={`package-status-box ${
 
+
+
                   blockingCount === 0
+
+
 
                     ? "package-ready"
 
+
+
                     : "package-blocked"
+
+
 
                 }`}
 
+
+
               >
+
+
 
                 <div className="package-status-icon">
 
+
+
                   {blockingCount === 0
+
+
 
                     ? "✓"
 
+
+
                     : "!"}
+
+
 
                 </div>
 
 
 
+
+
+
+
                 <div>
+
+
 
                   <strong>
 
+
+
                     {blockingCount === 0
+
+
 
                       ? t.packageReady
 
+
+
                       : t.packageBlocked}
 
+
+
                   </strong>
+
+
+
+
 
 
 
                   <p>
 
+
+
                     {blockingCount === 0
+
+
 
                       ? t.packageReadyText
 
+
+
                       : t.packageBlockedText}
+
+
 
                   </p>
 
+
+
                 </div>
 
+
+
               </div>
+
+
+
+
 
 
 
               <div className="package-details">
 
+
+
                 <div>
+
+
 
                   <span>{t.tenderId}</span>
 
+
+
                   <strong>
+
+
 
                     {tender.tender_id}
 
+
+
                   </strong>
+
+
 
                 </div>
 
 
 
+
+
+
+
                 <div>
 
+
+
                   <span>
+
+
 
                     {t.includedDocuments}
 
+
+
                   </span>
+
+
 
                   <strong>{includedCount}</strong>
 
+
+
                 </div>
 
 
 
+
+
+
+
                 <div>
+
+
 
                   <span>
 
+
+
                     {t.blockingIssues}
+
+
 
                   </span>
 
+
+
                   <strong>{blockingCount}</strong>
+
+
 
                 </div>
 
 
 
+
+
+
+
                 <div>
+
+
 
                   <span>{t.output}</span>
 
 
 
+
+
+
+
                   <strong className="output-name">
+
+
 
                     {tender.tender_id}_Package.pdf
 
+
+
                   </strong>
+
+
 
                 </div>
 
+
+
               </div>
+
+
+
+
 
 
 
               <div
 
+
+
                 style={{
+
+
 
                   marginBottom: "18px",
 
+
+
                   padding: "14px 16px",
+
+
 
                   border: "1px solid #dbe7f7",
 
+
+
                   borderRadius: "10px",
+
+
 
                   background: "#f5f9ff",
 
+
+
                   color: "#41658f",
+
+
 
                   fontSize: "11px",
 
+
+
                   lineHeight: "1.6",
+
+
 
                 }}
 
+
+
               >
+
+
 
                 <strong
 
+
+
                   style={{
+
+
 
                     display: "block",
 
+
+
                     color: "#205ba8",
+
+
 
                     marginBottom: "4px",
 
+
+
                   }}
+
+
 
                 >
 
+
+
                   ✓ Package Features
+
+
 
                 </strong>
 
 
 
+
+
+
+
                 Cover page • Document index • Correct
+
+
 
                 document order • Page numbering • CSV
 
+
+
                 checklist • Duplicate detection • 30 PDF /
 
+
+
                 50 MB limits
+
+
 
               </div>
 
 
 
+
+
+
+
               {generateError && (
 
+
+
                 <div className="alert alert-error">
+
+
 
                   <span>!</span>
 
 
 
+
+
+
+
                   <div>
+
+
 
                     <strong>
 
+
+
                       {t.generationError}
+
+
 
                     </strong>
 
+
+
                     <p>{generateError}</p>
+
+
 
                   </div>
 
+
+
                 </div>
 
+
+
               )}
+
+
+
+
 
 
 
               {generateSuccess && (
 
+
+
                 <div className="generate-success">
+
+
 
                   <span>✓</span>
 
 
 
+
+
+
+
                   <div>
+
+
 
                     <strong>
 
+
+
                       {t.packageGenerated}
+
+
 
                     </strong>
 
+
+
                     <p>{generateSuccess}</p>
+
+
 
                   </div>
 
+
+
                 </div>
+
+
 
               )}
 
 
 
+
+
+
+
               <button
 
+
+
                 type="button"
+
+
 
                 onClick={exportChecklistCSV}
 
+
+
                 style={{
+
+
 
                   width: "100%",
 
+
+
                   minHeight: "52px",
+
+
 
                   marginBottom: "12px",
 
+
+
                   border: "1px solid #2563eb",
+
+
 
                   borderRadius: "11px",
 
+
+
                   background: "#ffffff",
+
+
 
                   color: "#2563eb",
 
+
+
                   fontSize: "13px",
+
+
 
                   fontWeight: "800",
 
+
+
                   cursor: "pointer",
+
+
 
                 }}
 
+
+
               >
+
+
 
                 ↓ {t.exportCSV}
 
+
+
               </button>
+
+
+
+
 
 
 
               <button
 
+
+
                 type="button"
+
+
 
                 className="generate-button"
 
+
+
                 disabled={
+
+
 
                   blockingCount > 0 ||
 
+
+
                   isGenerating
+
+
 
                 }
 
+
+
                 onClick={generatePackage}
+
+
 
               >
 
+
+
                 {isGenerating ? (
 
+
+
                   <>
+
+
 
                     <span className="button-spinner" />
 
+
+
                     {t.generating}
 
+
+
                   </>
+
+
 
                 ) : (
 
+
+
                   <>
+
+
 
                     <span>↓</span>
 
+
+
                     {t.generateButton}
+
+
 
                   </>
 
+
+
                 )}
 
+
+
               </button>
+
+
+
+
 
 
 
               {blockingCount > 0 && (
 
+
+
                 <p className="generate-help">
+
+
 
                   {language === "en"
 
+
+
                     ? `Resolve ${blockingCount} blocking ${
+
+
 
                         blockingCount === 1
 
+
+
                           ? "issue"
+
+
 
                           : "issues"
 
+
+
                       } above to enable PDF package generation.`
+
+
 
                     : `PDF প্যাকেজ তৈরি করতে উপরের ${blockingCount}টি ব্লকিং সমস্যা সমাধান করুন।`}
 
+
+
                 </p>
+
+
 
               )}
 
+
+
             </section>
+
+
 
           </>
 
+
+
         )}
+
+
 
       </main>
 
 
 
+
+
+
+
       <footer className="footer">
 
+
+
         <p>
+
+
 
           TenderPack • AI DevFest 2026
 
+
+
         </p>
+
+
+
+
 
 
 
         <p>
 
+
+
           {language === "en"
+
+
 
             ? "Browser-only tender document processing"
 
+
+
             : "শুধু ব্রাউজারে টেন্ডার ডকুমেন্ট প্রসেসিং"}
+
+
 
         </p>
 
+
+
       </footer>
+
+
 
     </div>
 
+
+
   );
 
+
+
 }
+
+
+
+
 
 
 
 function InfoBox({
 
+
+
   label,
+
+
 
   value,
 
+
+
   full = false,
+
+
 
 }) {
 
+
+
   return (
+
+
 
     <div
 
+
+
       className={`info-box ${
+
+
 
         full ? "full" : ""
 
+
+
       }`}
+
+
 
     >
 
+
+
       <span>{label}</span>
+
+
 
       <strong>{value || "—"}</strong>
 
+
+
     </div>
+
+
 
   );
 
+
+
 }
+
+
+
+
 
 
 
 function StatBox({
 
+
+
   label,
+
+
 
   value,
 
+
+
   warning = false,
+
+
 
 }) {
 
+
+
   return (
+
+
 
     <div
 
+
+
       className={`stat-box ${
+
+
 
         warning ? "warning-stat" : ""
 
+
+
       }`}
+
+
 
     >
 
+
+
       <span>{label}</span>
+
+
 
       <strong>{value}</strong>
 
+
+
     </div>
+
+
 
   );
 
+
+
 }
+
+
+
+
 
 
 
 function StatusBadge({ status }) {
 
+
+
   return (
+
+
 
     <span
 
+
+
       className={`status-badge status-${status.key}`}
+
+
 
     >
 
+
+
       {status.key === "ok"
+
+
 
         ? "✓"
 
+
+
         : status.blocking
+
+
 
         ? "!"
 
+
+
         : "○"}{" "}
+
+
 
       {status.label}
 
+
+
     </span>
+
+
 
   );
 
+
+
 }
+
+
+
+
 
 
 
