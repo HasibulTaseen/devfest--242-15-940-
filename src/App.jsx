@@ -98,9 +98,9 @@ function App() {
       readyDocuments: "Ready Documents",
 
       step4: "STEP 4",
-      generateTitle: "Generate Tender Package",
+      generateTitle: "Export & Generate Package",
       generateText:
-        "Generate the final PDF with cover page, document index, ordered documents and page numbering.",
+        "Export the validation checklist or generate the final PDF with cover, document index, ordered documents and page numbering.",
 
       packageReady: "Package Ready",
       packageBlocked: "Package Blocked",
@@ -109,10 +109,12 @@ function App() {
         "All mandatory requirements are valid. You can generate the final package.",
 
       packageBlockedText:
-        "Resolve all blocking issues before generating the package.",
+        "Resolve all blocking issues before generating the PDF package.",
 
-      generateButton: "Generate Package",
+      generateButton: "Generate Package PDF",
       generating: "Generating Package...",
+
+      exportCSV: "Export Checklist CSV",
 
       includedDocuments: "Included Documents",
 
@@ -195,9 +197,9 @@ function App() {
       readyDocuments: "প্রস্তুত ডকুমেন্ট",
 
       step4: "ধাপ ৪",
-      generateTitle: "টেন্ডার প্যাকেজ তৈরি করুন",
+      generateTitle: "এক্সপোর্ট ও প্যাকেজ তৈরি",
       generateText:
-        "কভার, ডকুমেন্ট ইনডেক্স, সঠিক ক্রম এবং পৃষ্ঠা নম্বরসহ চূড়ান্ত PDF তৈরি করুন।",
+        "ভ্যালিডেশন চেকলিস্ট CSV হিসেবে এক্সপোর্ট করুন অথবা কভার, ইনডেক্স ও পৃষ্ঠা নম্বরসহ চূড়ান্ত PDF তৈরি করুন।",
 
       packageReady: "প্যাকেজ প্রস্তুত",
       packageBlocked: "প্যাকেজ ব্লক করা হয়েছে",
@@ -206,10 +208,12 @@ function App() {
         "সব আবশ্যক রিকোয়ারমেন্ট সঠিক আছে। এখন চূড়ান্ত প্যাকেজ তৈরি করা যাবে।",
 
       packageBlockedText:
-        "প্যাকেজ তৈরির আগে সব ব্লকিং সমস্যা সমাধান করুন।",
+        "PDF প্যাকেজ তৈরির আগে সব ব্লকিং সমস্যা সমাধান করুন।",
 
-      generateButton: "প্যাকেজ তৈরি করুন",
+      generateButton: "PDF প্যাকেজ তৈরি করুন",
       generating: "প্যাকেজ তৈরি হচ্ছে...",
+
+      exportCSV: "চেকলিস্ট CSV ডাউনলোড",
 
       includedDocuments: "অন্তর্ভুক্ত ডকুমেন্ট",
 
@@ -310,9 +314,7 @@ function App() {
     );
 
     return Array.from(new Uint8Array(hashBuffer))
-      .map((byte) =>
-        byte.toString(16).padStart(2, "0")
-      )
+      .map((byte) => byte.toString(16).padStart(2, "0"))
       .join("");
   }
 
@@ -407,9 +409,7 @@ function App() {
 
       Object.keys(updated).forEach(
         (requirementId) => {
-          if (
-            updated[requirementId] === id
-          ) {
+          if (updated[requirementId] === id) {
             delete updated[requirementId];
           }
         }
@@ -436,9 +436,7 @@ function App() {
     }
 
     if (bytes < 1024 * 1024) {
-      return `${(
-        bytes / 1024
-      ).toFixed(1)} KB`;
+      return `${(bytes / 1024).toFixed(1)} KB`;
     }
 
     return `${(
@@ -466,8 +464,7 @@ function App() {
         otherRequirementId,
         otherFileId,
       ]) =>
-        otherRequirementId !==
-          requirementId &&
+        otherRequirementId !== requirementId &&
         otherFileId === fileId
     );
   }
@@ -493,8 +490,7 @@ function App() {
         otherFileId,
       ]) => {
         if (
-          otherRequirementId ===
-          requirementId
+          otherRequirementId === requirementId
         ) {
           return false;
         }
@@ -691,6 +687,155 @@ function App() {
         matches[requirement.id]
     ).length;
 
+  /*
+  ============================================
+  CSV CHECKLIST EXPORT
+  ============================================
+  */
+
+  function exportChecklistCSV() {
+    if (
+      !tender ||
+      requirements.length === 0
+    ) {
+      return;
+    }
+
+    const rows = [
+      [
+        "Order",
+        "Requirement ID",
+        "Document",
+        "Required / Optional",
+        "Status",
+        "Matched File",
+        "Expiry Date",
+        "Submission Deadline",
+      ],
+    ];
+
+    requirements.forEach(
+      (requirement) => {
+        const status =
+          getRequirementStatus(
+            requirement
+          );
+
+        const matchedFileId =
+          matches[
+            requirement.id
+          ];
+
+        const matchedFile =
+          matchedFileId
+            ? getFileById(
+                matchedFileId
+              )
+            : null;
+
+        rows.push([
+          requirement.order,
+          requirement.id,
+
+          requirement.title_en ||
+            requirement.title_bn ||
+            requirement.id,
+
+          requirement.mandatory
+            ? "Required"
+            : "Optional",
+
+          status.label,
+
+          matchedFile
+            ? matchedFile.name
+            : "",
+
+          requirement.has_expiry
+            ? expiryDates[
+                requirement.id
+              ] || ""
+            : "N/A",
+
+          tender.submission_deadline,
+        ]);
+      }
+    );
+
+    const escapeCSV = (
+      value
+    ) => {
+      const stringValue =
+        String(value ?? "");
+
+      return `"${stringValue.replace(
+        /"/g,
+        '""'
+      )}"`;
+    };
+
+    const csvContent =
+      rows
+        .map((row) =>
+          row
+            .map(escapeCSV)
+            .join(",")
+        )
+        .join("\n");
+
+    /*
+    UTF-8 BOM makes Bangla text
+    display correctly in Excel.
+    */
+
+    const blob =
+      new Blob(
+        [
+          "\uFEFF" +
+            csvContent,
+        ],
+        {
+          type:
+            "text/csv;charset=utf-8;",
+        }
+      );
+
+    const url =
+      URL.createObjectURL(
+        blob
+      );
+
+    const link =
+      document.createElement(
+        "a"
+      );
+
+    link.href = url;
+
+    link.download =
+      `${tender.tender_id}_Checklist.csv`;
+
+    document.body.appendChild(
+      link
+    );
+
+    link.click();
+
+    link.remove();
+
+    setTimeout(() => {
+      URL.revokeObjectURL(
+        url
+      );
+    }, 1000);
+  }
+
+  /*
+  ============================================
+  FINAL PDF GENERATION
+  ============================================
+  */
+
   async function generatePackage() {
     if (!tender) {
       setGenerateError(
@@ -740,7 +885,7 @@ function App() {
 
       /*
       =========================================
-      DOCUMENT INDEX INFORMATION
+      DOCUMENT INDEX CALCULATION
 
       Page 1 = Cover
       Page 2 = Index
@@ -785,8 +930,11 @@ function App() {
       =========================================
       */
 
-      const coverWidth = 595.28;
-      const coverHeight = 841.89;
+      const coverWidth =
+        595.28;
+
+      const coverHeight =
+        841.89;
 
       const coverPage =
         outputPdf.addPage([
@@ -796,9 +944,13 @@ function App() {
 
       coverPage.drawRectangle({
         x: 0,
-        y: coverHeight - 195,
-        width: coverWidth,
+        y:
+          coverHeight -
+          195,
+        width:
+          coverWidth,
         height: 195,
+
         color: rgb(
           0.035,
           0.12,
@@ -808,9 +960,12 @@ function App() {
 
       coverPage.drawRectangle({
         x: 0,
-        y: coverHeight - 195,
+        y:
+          coverHeight -
+          195,
         width: 8,
         height: 195,
+
         color: rgb(
           0.15,
           0.48,
@@ -822,9 +977,13 @@ function App() {
         "TENDER DOCUMENT PACKAGE",
         {
           x: 45,
-          y: coverHeight - 65,
+          y:
+            coverHeight -
+            65,
+
           size: 11,
           font: boldFont,
+
           color: rgb(
             0.35,
             0.68,
@@ -839,16 +998,25 @@ function App() {
         ),
         {
           x: 45,
-          y: coverHeight - 112,
+          y:
+            coverHeight -
+            112,
+
           size: 27,
           font: boldFont,
-          color: rgb(1, 1, 1),
+
+          color: rgb(
+            1,
+            1,
+            1
+          ),
         }
       );
 
       let coverTenderTitle =
         String(
-          tender.title || ""
+          tender.title ||
+            ""
         );
 
       if (
@@ -866,9 +1034,14 @@ function App() {
         coverTenderTitle,
         {
           x: 45,
-          y: coverHeight - 150,
+          y:
+            coverHeight -
+            150,
+
           size: 15,
-          font: regularFont,
+          font:
+            regularFont,
+
           color: rgb(
             0.83,
             0.89,
@@ -881,9 +1054,14 @@ function App() {
         "Submission-ready tender document package",
         {
           x: 45,
-          y: coverHeight - 175,
+          y:
+            coverHeight -
+            175,
+
           size: 9,
-          font: regularFont,
+          font:
+            regularFont,
+
           color: rgb(
             0.55,
             0.68,
@@ -893,7 +1071,8 @@ function App() {
       );
 
       let coverY =
-        coverHeight - 245;
+        coverHeight -
+        245;
 
       function drawCoverField(
         label,
@@ -904,8 +1083,11 @@ function App() {
           {
             x: 45,
             y: coverY,
+
             size: 7.5,
-            font: boldFont,
+            font:
+              boldFont,
+
             color: rgb(
               0.42,
               0.48,
@@ -915,7 +1097,9 @@ function App() {
         );
 
         let displayValue =
-          String(value || "-");
+          String(
+            value || "-"
+          );
 
         if (
           displayValue.length >
@@ -932,9 +1116,14 @@ function App() {
           displayValue,
           {
             x: 45,
-            y: coverY - 18,
+            y:
+              coverY -
+              18,
+
             size: 11,
-            font: regularFont,
+            font:
+              regularFont,
+
             color: rgb(
               0.08,
               0.13,
@@ -976,7 +1165,8 @@ function App() {
 
       const packageDate =
         `${now.getFullYear()}-${String(
-          now.getMonth() + 1
+          now.getMonth() +
+            1
         ).padStart(
           2,
           "0"
@@ -999,8 +1189,11 @@ function App() {
         {
           x: 45,
           y: coverY,
+
           size: 8,
-          font: boldFont,
+          font:
+            boldFont,
+
           color: rgb(
             0.15,
             0.39,
@@ -1012,23 +1205,33 @@ function App() {
       coverY -= 21;
 
       documentIndex.forEach(
-        (item, index) => {
-          if (coverY < 45) {
+        (
+          item,
+          index
+        ) => {
+          if (
+            coverY < 45
+          ) {
             return;
           }
 
           let title =
-            item.requirement
+            item
+              .requirement
               .title_en ||
-            item.requirement
+            item
+              .requirement
               .title_bn ||
-            item.requirement.id;
+            item
+              .requirement
+              .id;
 
           title =
             String(title);
 
           if (
-            title.length > 58
+            title.length >
+            58
           ) {
             title =
               title.slice(
@@ -1042,8 +1245,12 @@ function App() {
             {
               x: 55,
               y: coverY,
+
               size: 8.5,
-              font: regularFont,
+
+              font:
+                regularFont,
+
               color: rgb(
                 0.15,
                 0.19,
@@ -1058,7 +1265,7 @@ function App() {
 
       /*
       =========================================
-      INDEX PAGE
+      DOCUMENT INDEX PAGE
       =========================================
       */
 
@@ -1070,9 +1277,15 @@ function App() {
 
       indexPage.drawRectangle({
         x: 0,
-        y: coverHeight - 125,
-        width: coverWidth,
+        y:
+          coverHeight -
+          125,
+
+        width:
+          coverWidth,
+
         height: 125,
+
         color: rgb(
           0.035,
           0.12,
@@ -1082,9 +1295,13 @@ function App() {
 
       indexPage.drawRectangle({
         x: 0,
-        y: coverHeight - 125,
+        y:
+          coverHeight -
+          125,
+
         width: 8,
         height: 125,
+
         color: rgb(
           0.15,
           0.48,
@@ -1096,9 +1313,15 @@ function App() {
         "DOCUMENT INDEX",
         {
           x: 45,
-          y: coverHeight - 62,
+          y:
+            coverHeight -
+            62,
+
           size: 24,
-          font: boldFont,
+
+          font:
+            boldFont,
+
           color: rgb(
             1,
             1,
@@ -1113,9 +1336,15 @@ function App() {
         ),
         {
           x: 45,
-          y: coverHeight - 88,
+          y:
+            coverHeight -
+            88,
+
           size: 10,
-          font: regularFont,
+
+          font:
+            regularFont,
+
           color: rgb(
             0.55,
             0.72,
@@ -1128,9 +1357,15 @@ function App() {
         "Included documents and starting page numbers",
         {
           x: 45,
-          y: coverHeight - 106,
+          y:
+            coverHeight -
+            106,
+
           size: 8,
-          font: regularFont,
+
+          font:
+            regularFont,
+
           color: rgb(
             0.62,
             0.73,
@@ -1140,18 +1375,25 @@ function App() {
       );
 
       let indexY =
-        coverHeight - 175;
+        coverHeight -
+        175;
 
       /*
-      INDEX HEADER
+      TABLE HEADER
       */
 
       indexPage.drawRectangle({
         x: 40,
-        y: indexY - 8,
+        y:
+          indexY -
+          8,
+
         width:
-          coverWidth - 80,
+          coverWidth -
+          80,
+
         height: 32,
+
         color: rgb(
           0.94,
           0.96,
@@ -1163,9 +1405,14 @@ function App() {
         "ORDER",
         {
           x: 52,
-          y: indexY + 3,
+          y:
+            indexY +
+            3,
+
           size: 8,
-          font: boldFont,
+          font:
+            boldFont,
+
           color: rgb(
             0.35,
             0.42,
@@ -1178,9 +1425,14 @@ function App() {
         "DOCUMENT",
         {
           x: 110,
-          y: indexY + 3,
+          y:
+            indexY +
+            3,
+
           size: 8,
-          font: boldFont,
+          font:
+            boldFont,
+
           color: rgb(
             0.35,
             0.42,
@@ -1193,9 +1445,14 @@ function App() {
         "START PAGE",
         {
           x: 465,
-          y: indexY + 3,
+          y:
+            indexY +
+            3,
+
           size: 8,
-          font: boldFont,
+          font:
+            boldFont,
+
           color: rgb(
             0.35,
             0.42,
@@ -1213,11 +1470,15 @@ function App() {
       documentIndex.forEach(
         (item) => {
           let documentTitle =
-            item.requirement
+            item
+              .requirement
               .title_en ||
-            item.requirement
+            item
+              .requirement
               .title_bn ||
-            item.requirement.id;
+            item
+              .requirement
+              .id;
 
           documentTitle =
             String(
@@ -1237,14 +1498,20 @@ function App() {
 
           indexPage.drawText(
             String(
-              item.requirement
+              item
+                .requirement
                 .order
             ),
             {
               x: 55,
-              y: indexY,
+              y:
+                indexY,
+
               size: 9,
-              font: boldFont,
+
+              font:
+                boldFont,
+
               color: rgb(
                 0.15,
                 0.38,
@@ -1257,9 +1524,14 @@ function App() {
             documentTitle,
             {
               x: 110,
-              y: indexY,
+              y:
+                indexY,
+
               size: 9,
-              font: regularFont,
+
+              font:
+                regularFont,
+
               color: rgb(
                 0.12,
                 0.17,
@@ -1274,9 +1546,14 @@ function App() {
             ),
             {
               x: 500,
-              y: indexY,
+              y:
+                indexY,
+
               size: 9,
-              font: boldFont,
+
+              font:
+                boldFont,
+
               color: rgb(
                 0.1,
                 0.42,
@@ -1289,18 +1566,22 @@ function App() {
             start: {
               x: 45,
               y:
-                indexY - 12,
+                indexY -
+                12,
             },
 
             end: {
               x:
                 coverWidth -
                 45,
+
               y:
-                indexY - 12,
+                indexY -
+                12,
             },
 
-            thickness: 0.4,
+            thickness:
+              0.4,
 
             color: rgb(
               0.86,
@@ -1313,7 +1594,9 @@ function App() {
         }
       );
 
-      if (indexY > 90) {
+      if (
+        indexY > 90
+      ) {
         indexY -= 15;
 
         indexPage.drawText(
@@ -1321,8 +1604,12 @@ function App() {
           {
             x: 45,
             y: indexY,
+
             size: 9,
-            font: regularFont,
+
+            font:
+              regularFont,
+
             color: rgb(
               0.4,
               0.46,
@@ -1334,15 +1621,12 @@ function App() {
 
       /*
       =========================================
-      ADD ORIGINAL DOCUMENTS
-      =========================================
-
-      Extra bottom area is added so footer
-      never covers original PDF content.
+      ORIGINAL PDF DOCUMENTS
       =========================================
       */
 
-      const footerHeight = 30;
+      const footerHeight =
+        30;
 
       for (
         const item of
@@ -1395,16 +1679,13 @@ function App() {
                 footerHeight,
             ]);
 
-          /*
-          Original page is shifted upward.
-          Footer has its own 30pt area.
-          */
-
           newPage.drawPage(
             embeddedPage,
             {
               x: 0,
-              y: footerHeight,
+              y:
+                footerHeight,
+
               width,
               height,
             }
@@ -1422,12 +1703,14 @@ function App() {
               x:
                 width -
                 20,
+
               y:
                 footerHeight -
                 1,
             },
 
-            thickness: 0.4,
+            thickness:
+              0.4,
 
             color: rgb(
               0.82,
@@ -1440,7 +1723,7 @@ function App() {
 
       /*
       =========================================
-      PAGE FOOTERS
+      PAGE NUMBER FOOTERS
       =========================================
       */
 
@@ -1451,7 +1734,10 @@ function App() {
         outputPages.length;
 
       outputPages.forEach(
-        (page, index) => {
+        (
+          page,
+          index
+        ) => {
           const {
             width,
           } =
@@ -1462,7 +1748,8 @@ function App() {
               index + 1
             } of ${totalOutputPages}`;
 
-          const fontSize = 8;
+          const fontSize =
+            8;
 
           const textWidth =
             regularFont.widthOfTextAtSize(
@@ -1498,7 +1785,7 @@ function App() {
 
       /*
       =========================================
-      SAVE AND DOWNLOAD
+      DOWNLOAD FINAL PDF
       =========================================
       */
 
@@ -1571,8 +1858,13 @@ function App() {
           </div>
 
           <div>
-            <h1>{t.appName}</h1>
-            <p>{t.subtitle}</p>
+            <h1>
+              {t.appName}
+            </h1>
+
+            <p>
+              {t.subtitle}
+            </p>
           </div>
         </div>
 
@@ -1584,7 +1876,9 @@ function App() {
                 : ""
             }
             onClick={() =>
-              setLanguage("en")
+              setLanguage(
+                "en"
+              )
             }
           >
             EN
@@ -1597,7 +1891,9 @@ function App() {
                 : ""
             }
             onClick={() =>
-              setLanguage("bn")
+              setLanguage(
+                "bn"
+              )
             }
           >
             বাংলা
@@ -1609,37 +1905,56 @@ function App() {
         <section className="hero">
           <div>
             <span className="hero-badge">
-              AI DEVFEST 2026
+              AI DEVFEST
+              2026
             </span>
 
-            <h2>{t.heroTitle}</h2>
+            <h2>
+              {t.heroTitle}
+            </h2>
 
-            <p>{t.heroText}</p>
+            <p>
+              {t.heroText}
+            </p>
 
             <div className="privacy-pill">
-              <span>●</span>
-              {t.browserNotice}
+              <span>
+                ●
+              </span>
+
+              {
+                t.browserNotice
+              }
             </div>
           </div>
 
           <div className="hero-decoration">
             <div className="document-icon">
-              <span>PDF</span>
-              <small>PACKAGE</small>
+              <span>
+                PDF
+              </span>
+
+              <small>
+                PACKAGE
+              </small>
             </div>
           </div>
         </section>
 
         {error && (
           <div className="alert alert-error">
-            <span>!</span>
+            <span>
+              !
+            </span>
 
             <div>
               <strong>
                 File Error
               </strong>
 
-              <p>{error}</p>
+              <p>
+                {error}
+              </p>
             </div>
           </div>
         )}
@@ -1653,14 +1968,19 @@ function App() {
                 {t.step1}
               </span>
 
-              <h3>{t.loadTitle}</h3>
+              <h3>
+                {t.loadTitle}
+              </h3>
 
-              <p>{t.loadText}</p>
+              <p>
+                {t.loadText}
+              </p>
             </div>
 
             {tender && (
               <span className="success-badge">
-                ✓ {t.loaded}
+                ✓{" "}
+                {t.loaded}
               </span>
             )}
           </div>
@@ -1675,7 +1995,8 @@ function App() {
             </strong>
 
             <span>
-              JSON • requirements.json
+              JSON •
+              requirements.json
             </span>
 
             <input
@@ -1700,7 +2021,9 @@ function App() {
                   </span>
 
                   <h3>
-                    {t.tenderInfo}
+                    {
+                      t.tenderInfo
+                    }
                   </h3>
                 </div>
 
@@ -1722,28 +2045,36 @@ function App() {
                 />
 
                 <InfoBox
-                  label={t.title}
+                  label={
+                    t.title
+                  }
                   value={
                     tender.title
                   }
                 />
 
                 <InfoBox
-                  label={t.entity}
+                  label={
+                    t.entity
+                  }
                   value={
                     tender.procuring_entity
                   }
                 />
 
                 <InfoBox
-                  label={t.bidder}
+                  label={
+                    t.bidder
+                  }
                   value={
                     tender.bidder
                   }
                 />
 
                 <InfoBox
-                  label={t.deadline}
+                  label={
+                    t.deadline
+                  }
                   value={
                     tender.submission_deadline
                   }
@@ -1762,7 +2093,9 @@ function App() {
                   </span>
 
                   <h3>
-                    {t.checklist}
+                    {
+                      t.checklist
+                    }
                   </h3>
                 </div>
 
@@ -1779,19 +2112,27 @@ function App() {
                   <thead>
                     <tr>
                       <th>
-                        {t.order}
+                        {
+                          t.order
+                        }
                       </th>
 
                       <th>
-                        {t.document}
+                        {
+                          t.document
+                        }
                       </th>
 
                       <th>
-                        {t.type}
+                        {
+                          t.type
+                        }
                       </th>
 
                       <th>
-                        {t.expiry}
+                        {
+                          t.expiry
+                        }
                       </th>
                     </tr>
                   </thead>
@@ -1871,15 +2212,21 @@ function App() {
               <div className="section-heading">
                 <div>
                   <span className="step-badge">
-                    {t.step2}
+                    {
+                      t.step2
+                    }
                   </span>
 
                   <h3>
-                    {t.pdfTitle}
+                    {
+                      t.pdfTitle
+                    }
                   </h3>
 
                   <p>
-                    {t.pdfText}
+                    {
+                      t.pdfText
+                    }
                   </p>
                 </div>
 
@@ -1896,7 +2243,9 @@ function App() {
 
               {pdfError && (
                 <div className="alert alert-error">
-                  <span>!</span>
+                  <span>
+                    !
+                  </span>
 
                   <div>
                     <strong>
@@ -1904,7 +2253,9 @@ function App() {
                     </strong>
 
                     <p>
-                      {pdfError}
+                      {
+                        pdfError
+                      }
                     </p>
                   </div>
                 </div>
@@ -1916,11 +2267,15 @@ function App() {
                 </div>
 
                 <strong>
-                  {t.pdfChoose}
+                  {
+                    t.pdfChoose
+                  }
                 </strong>
 
                 <span>
-                  {t.pdfHint}
+                  {
+                    t.pdfHint
+                  }
                 </span>
 
                 <input
@@ -1938,7 +2293,9 @@ function App() {
                   <div className="spinner" />
 
                   <span>
-                    {t.processing}
+                    {
+                      t.processing
+                    }
                   </span>
                 </div>
               )}
@@ -2005,7 +2362,9 @@ function App() {
                 {pdfFiles.length ===
                 0 ? (
                   <div className="empty-state">
-                    <div>PDF</div>
+                    <div>
+                      PDF
+                    </div>
 
                     <p>
                       {
@@ -2016,7 +2375,9 @@ function App() {
                 ) : (
                   <div className="pdf-list">
                     {pdfFiles.map(
-                      (pdf) => {
+                      (
+                        pdf
+                      ) => {
                         const duplicate =
                           isDuplicateFile(
                             pdf
@@ -2105,15 +2466,21 @@ function App() {
               <div className="section-heading">
                 <div>
                   <span className="step-badge">
-                    {t.step3}
+                    {
+                      t.step3
+                    }
                   </span>
 
                   <h3>
-                    {t.matchTitle}
+                    {
+                      t.matchTitle
+                    }
                   </h3>
 
                   <p>
-                    {t.matchText}
+                    {
+                      t.matchText
+                    }
                   </p>
                 </div>
               </div>
@@ -2148,7 +2515,9 @@ function App() {
                   </span>
 
                   <strong>
-                    {okCount}
+                    {
+                      okCount
+                    }
                   </strong>
                 </div>
               </div>
@@ -2337,7 +2706,9 @@ function App() {
               <div className="section-heading">
                 <div>
                   <span className="step-badge">
-                    {t.step4}
+                    {
+                      t.step4
+                    }
                   </span>
 
                   <h3>
@@ -2443,43 +2814,58 @@ function App() {
 
               <div
                 style={{
-                  marginBottom: "18px",
-                  padding: "13px 15px",
+                  marginBottom:
+                    "18px",
+
+                  padding:
+                    "14px 16px",
+
                   border:
                     "1px solid #dbe7f7",
-                  borderRadius: "10px",
+
+                  borderRadius:
+                    "10px",
+
                   background:
                     "#f5f9ff",
+
                   color:
                     "#41658f",
-                  fontSize: "11px",
-                  lineHeight: "1.6",
+
+                  fontSize:
+                    "11px",
+
+                  lineHeight:
+                    "1.6",
                 }}
               >
                 <strong
                   style={{
                     display:
                       "block",
+
                     color:
                       "#205ba8",
+
                     marginBottom:
-                      "3px",
+                      "4px",
                   }}
                 >
-                  ✓ Document Index Included
+                  ✓ Bonus
+                  Features
                 </strong>
 
-                Page 1 will be the
-                cover, Page 2 will be
-                the document index,
-                and the tender
-                documents will start
-                from Page 3.
+                Document Index
+                with starting
+                pages + CSV
+                Checklist Export
               </div>
 
               {generateError && (
                 <div className="alert alert-error">
-                  <span>!</span>
+                  <span>
+                    !
+                  </span>
 
                   <div>
                     <strong>
@@ -2498,7 +2884,9 @@ function App() {
 
               {generateSuccess && (
                 <div className="generate-success">
-                  <span>✓</span>
+                  <span>
+                    ✓
+                  </span>
 
                   <div>
                     <strong>
@@ -2514,6 +2902,53 @@ function App() {
                   </div>
                 </div>
               )}
+
+              {/* CSV BUTTON */}
+
+              <button
+                type="button"
+                onClick={
+                  exportChecklistCSV
+                }
+                style={{
+                  width:
+                    "100%",
+
+                  minHeight:
+                    "52px",
+
+                  marginBottom:
+                    "12px",
+
+                  border:
+                    "1px solid #2563eb",
+
+                  borderRadius:
+                    "11px",
+
+                  background:
+                    "#ffffff",
+
+                  color:
+                    "#2563eb",
+
+                  fontSize:
+                    "13px",
+
+                  fontWeight:
+                    "800",
+
+                  cursor:
+                    "pointer",
+                }}
+              >
+                ↓{" "}
+                {
+                  t.exportCSV
+                }
+              </button>
+
+              {/* PDF BUTTON */}
 
               <button
                 type="button"
@@ -2537,7 +2972,9 @@ function App() {
                   </>
                 ) : (
                   <>
-                    <span>↓</span>
+                    <span>
+                      ↓
+                    </span>
 
                     {
                       t.generateButton
@@ -2561,7 +2998,8 @@ function App() {
                     ? "issue"
                     : "issues"}{" "}
                   above to enable
-                  package generation.
+                  PDF package
+                  generation.
                 </p>
               )}
             </section>
@@ -2571,8 +3009,8 @@ function App() {
 
       <footer className="footer">
         <p>
-          TenderPack • AI DevFest
-          2026
+          TenderPack • AI
+          DevFest 2026
         </p>
 
         <p>
@@ -2592,7 +3030,9 @@ function InfoBox({
   return (
     <div
       className={`info-box ${
-        full ? "full" : ""
+        full
+          ? "full"
+          : ""
       }`}
     >
       <span>
@@ -2637,7 +3077,8 @@ function StatusBadge({
     <span
       className={`status-badge status-${status.key}`}
     >
-      {status.key === "ok"
+      {status.key ===
+      "ok"
         ? "✓"
         : status.blocking
         ? "!"
