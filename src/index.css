@@ -1,3 +1,181 @@
+.validation-summary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.validation-box {
+  padding: 17px 18px;
+  border-radius: 12px;
+  border: 1px solid #e3e9f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.validation-box span {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.validation-box strong {
+  font-size: 25px;
+}
+
+.danger-summary {
+  background: #fff2f1;
+  border-color: #f1cecb;
+  color: #a63831;
+}
+
+.success-summary {
+  background: #ecfaf3;
+  border-color: #ccebdd;
+  color: #11734a;
+}
+
+.match-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.match-card {
+  padding: 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 13px;
+  background: #ffffff;
+}
+
+.match-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 17px;
+}
+
+.match-document {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.match-document strong {
+  display: block;
+  color: #17283f;
+  font-size: 14px;
+}
+
+.match-document small {
+  display: block;
+  margin-top: 4px;
+  color: #8b97a8;
+  font-size: 10px;
+}
+
+.match-order {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: #edf4ff;
+  color: #2868c7;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.match-fields {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 13px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.form-group label {
+  color: #67758a;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.form-group select,
+.form-group input {
+  width: 100%;
+  min-height: 43px;
+  padding: 0 12px;
+  border: 1px solid #d8e0e9;
+  border-radius: 9px;
+  outline: none;
+  background: #fafcff;
+  color: #213149;
+  font-size: 12px;
+}
+
+.form-group select:focus,
+.form-group input:focus {
+  border-color: #4c8ce7;
+  box-shadow: 0 0 0 3px rgba(60, 126, 222, 0.1);
+}
+
+.form-group small {
+  color: #929dab;
+  font-size: 9px;
+}
+
+.status-badge {
+  flex-shrink: 0;
+  padding: 7px 10px;
+  border-radius: 50px;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.status-missing {
+  background: #ffe9e7;
+  color: #b53c33;
+}
+
+.status-expiry-needed {
+  background: #fff1d6;
+  color: #9a6100;
+}
+
+.status-expired {
+  background: #ffe3e1;
+  color: #ae2f28;
+}
+
+.status-not-provided {
+  background: #eef1f5;
+  color: #687487;
+}
+
+.status-ok {
+  background: #e3f8ed;
+  color: #087848;
+}
+
+@media (max-width: 760px) {
+  .validation-summary,
+  .match-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .match-card-top {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
 * {
   box-sizing: border-box;
   margin: 0;
